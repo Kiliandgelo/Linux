@@ -1,0 +1,658 @@
+## Command stringing
+### Filter commands
+* cut
+* tr
+* grep
+* wc
+* sort
+* uniq
+* tee
+* sed
+* head / tail 
+* xargs
+
+## Description
+We saw in the previous section that we could redirect the result of a process to a file. So we redirected the output (stdout and stderr), which defaults to the screen, in a file. We also saw that it was possible to send data to a process via the stdin input standard.
+
+
+In this chapter, we will see that we will perform the same redirection game, but instead of redirecting to a file, it will be to another process.
+
+
+Basically, anything that comes out of the command1 is immediately sent to the command2. And you can chain commands like this indefinitely!
+
+
+
+Sometimes the use of some commands alone may seem limited, but they usually make sense when combined with other commands.
+
+
+
+To redirect the output of a command to another command, we do not use the symbol>, but the symbol |. When the symbol "pipe" | is used, only stdout (1) is passed to the next command. If you want the errors to also be sent to the stdin (0) of the second command, you must redirect the stderr (2) to the stdout (1) with the statement 2> & 1.
+
+
+## Filter commands
+### CUT
+Cut allows you to extract columns from a string into a known delimiter. An example of a typical file type that cut handles very well is the csv files (Comma Separate Value) each field being separated by the delimiter, or; or other known delimiter.
+
+
+It is therefore possible with cut to extract only columns 1 and 3.
+
+
+
+Here's an example with the / etc / passwd file that uses the delimiter: (colon) to separate each column.
+
+#### example use of cut
+
+#Presentation of the file / etc / passwd
+
+        username@hostname:~$ head /etc/passwd
+        root:x:0:0:root:/root:/bin/bash
+        daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+        bin:x:2:2:bin:/bin:/bin/sh
+        sys:x:3:3:sys:/dev:/bin/sh
+        sync:x:4:65534:sync:/bin:/bin/sync
+        games:x:5:60:games:/usr/games:/bin/sh
+        man:x:6:12:man:/var/cache/man:/bin/sh
+        lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+        mail:x:8:8:mail:/var/mail:/bin/sh
+        news:x:9:9:news:/var/spool/news:/bin/sh
+ 
+ 
+#Using the cut command to extract column 1 AND 3 using
+
+
+#delimit it:
+
+          username@hostname:~$ cut -d ":" -f 1,3 /etc/passwd
+          root:0
+          daemon:1
+          bin:2
+          sys:3
+          sync:4
+          games:5
+          man:6
+          lp:7
+          mail:8
+          news:9
+
+ 
+As you can see, we can use cut as an argument to the file to manipulate. Cut is also able to read the string from the stdin (0).
+
+### Using cut with a string from the Stdin
+
+#Same command but with command nesting.
+
+          username@hostname:~$ cat /etc/passwd | cut -d ":" -f 1,3 
+          root:0
+          daemon:1
+          bin:2
+          sys:3
+          sync:4
+          games:5
+          man:6
+          lp:7
+          mail:8
+          news:9
+
+
+You will find in the future that cut is essential in everyday life, a bit like a knife.
+
+
+We will find him later ....
+
+
+### TR
+tr allows us to do manipulation on a type of character. For example, it is possible to delete duplicate characters that follow each other. Another common example of use is the -s option, which allows you to "squeeze" repeating characters such as spaces or others. Here is a file formatted for the man, but which can be complicated to handle with cut for example, due to the number of variable spaces:
+
+### Scorers file
+
+      Ribery         99       Munich,all         fr
+      Giroud         87       Arsenal,ang        fr
+      Hamouma        61       St-etienne,fr      fr
+      Balotelli      89       Milan,it           it
+      Neur           0        Munich,all         de
+      Loic           29       Newcastle,ang      fr
+      Aubameyang     98       Dortmund,all       ga
+      Pogba          99       Juventus,it        fr
+      kaka           53       Milan,it           br
+      Riviere        15       Monaco,fr          fr
+      Bastos         26       Roma,it            br
+      Lukaku         31       Everton,ang        be
+      Toti           17       Juventus,it        it
+      Hazard         78       Chelsea,ang        be
+      Ibrahimovic    99       Paris,fr           su
+      Kruse          43       Gladbach,all       de
+      Tabanou        82       St-etienne,fr      fr
+      Ozil           55       Arsenal,ang        de
+      Donati         8        Leverkusen,all     it
+      Lyoris         0        Tottenham,ang      fr
+      Weelbeck       2        ManU,ang           en
+      Robben         72       Munich,all         nd
+      Gignac         87       Marseille,fr       fr
+      Griezmann      87       Sociedad,esp       fr
+      Benzema        1        Madrid,esp         fr
+      Cabaye         65       Newcastle,ang      fr
+      Reus           78       Dortmund,all       de
+      Neymar         45       Barcelone,esp      br
+      Rossi          38       Florentina,it      it
+      Lewandowski    87       Dortmund,all       pl
+
+
+If we try to extract the second column, which is the number of goals scored by the player with the cut command we will have a problem. tr is present to "squeezer" the repetitive spaces: 
+
+### Using TR, Demonstration
+
+#the second column is a space!
+
+
+        username@hostname:~$ cat les_buts.txt | cut -d " " -f 2
+ 
+ 
+#use tr to cut the number of spaces.
+
+
+          username@hostname:~$ cat les_buts.txt | tr -s " "
+          
+          
+          
+          Ribery 99 Munich,all fr
+          Giroud 87 Arsenal,ang    fr
+          Hamouma 61 St-etienne,fr fr
+          Balotelli 89 Milan,it it
+          Neur 0 Munich,all de
+          Loic 29 Newcastle,ang fr
+          Aubameyang 98 Dortmund,all ga
+
+
+Well we have "squeezer" spaces too. Less easy to read for the human, but more efficient for the system. It is important to note that only the output is in "machine" format; the original file has not been modified.
+
+
+
+It's all well and good, but I wanted a csv file with delimiter; .
+
+
+
+tr also allows us to replace one character with another. Warning! Only 1 character can be replaced at a time! In our case, I will replace the space for the character; . Here is the result:
+
+### tr with character replacement
+
+        username@hostname:~$ cat les_buts.txt | tr -s " " | tr " " ";"
+        Ribery;99;Munich,all;fr
+        Giroud;87;Arsenal,ang   ;fr
+        Hamouma;61;St-etienne,fr;fr
+        Balotelli;89;Milan,it;it
+        Neur;0;Munich,all;de
+        Loic;29;Newcastle,ang;fr
+        Aubameyang;98;Dortmund,all;ga
+        Pogba;99;Juventus,it;fr
+        kaka;53;Milan,it;br
+ 
+Question:
+* Now, how do I create a csv file?
+* Is it possible to recover only the second column?
+
+
+## GREP
+In this section we will see grep, but the grep "simple" to start. Grep is a very complete utility, which I think is essential to master. the question is not "do I use it every day", but rather "does an hour go to work without me using it"?
+
+
+Grep allows us to extract a line from a string, the extraction is done if a pattern match! In other words grep allows us to search in a file! It returns the information to the output standard (stdout).
+
+
+### Here is an example of use:
+
+#### search with grep in passwd
+
+#simple use of grep
+
+        username@hostname:~$ grep --color "bash" /etc/passwd 
+        root:x:0:0:root:/root:/bin/bash
+        thomas:x:1000:1000:thomas,,,:/home/tboutry:/bin/bash
+        user_test:x:1002:1002:,,,:/home/epatino:/bin/bash
+        postgres:x:118:128:PostgreSQL administrator,,,:/var/lib/postgresql:/bin/bash
+        guest-QbUTwC:x:126:135:Guest,,,:/tmp/guest-QbUTwC:/bin/bash
+        tom:x:1003:1003:,,,:/home/tom:/bin/bash
+ 
+As you can see, it is possible to provide a grep file as argument, but it is able to read from the stdin (0).
+
+### using grep from the stdin
+
+#simple use of grep
+
+        username@hostname:~$ cat /etc/passwd |grep --color "bash" 
+        root:x:0:0:root:/root:/bin/bash
+        thomas:x:1000:1000:thomas,,,:/home/tboutry:/bin/bash
+        user_test:x:1002:1002:,,,:/home/epatino:/bin/bash
+        postgres:x:118:128:PostgreSQL administrator,,,:/var/lib/postgresql:/bin/bash
+        guest-QbUTwC:x:126:135:Guest,,,:/tmp/guest-QbUTwC:/bin/bash
+        tom:x:1003:1003:,,,:/home/tom:/bin/bash
+
+
+Although, in this case, there are only a few differences, it is important to know that grep is optimized for interpreting large files. It may be more optimal at a given moment to provide the file as a parameter instead of transmitting the information via the standard input channel (stdin).
+
+
+
+Well, here is the simple grep presentation! To return to our case: I want to manipulate my file to extract the players who play in English clubs. I resume my order and add the grep:
+
+### grep command with others
+
+#search for players playing in England
+
+
+        username@hostname:~$ cat les_buts.txt | tr -s " " | tr " " ";" | grep ",ang"
+        
+        
+        Giroud;87;Arsenal,ang   ;fr
+        Loic;29;Newcastle,ang;fr
+        Lukaku;31;Everton,ang;be
+        Hazard;78;Chelsea,ang;be
+        Ozil;55;Arsenal,ang;de
+        Lyoris;0;Tottenham,ang;fr
+        Weelbeck;2;ManU,ang;en
+        Cabaye;65;Newcastle,ang;fr
+Is it optimal as a notation?
+
+
+
+The file we handle is not too big, so the impact is minimal. However, I advise you to filter your data before handling them with other filters. Here is an "optimized" command whose difference only applies to large files
+
+
+### commanded grep for players in England
+
+#search days in england
+
+
+        username@hostname:~$ cat les_buts.txt | grep ",ang" | tr -s " " | tr " " ";" 
+        
+        
+        
+        Giroud         87       Arsenal,ang        fr
+        Loic           29       Newcastle,ang      fr
+        Lukaku         31       Everton,ang        be
+        Hazard         78       Chelsea,ang        be
+        Ozil           55       Arsenal,ang        de
+        Lyoris         0        Tottenham,ang      fr
+        Weelbeck       2        ManU,ang           en
+        Cabaye         65       Newcastle,ang      fr
+        
+Interesting option:
+* -v: it is possible to do an inverted search. Here, I'm looking for the lines that do not contain the string bash:
+
+### grep reverse search
+
+#reverse search.
+
+          user@hostname:~$ cat /etc/passwd | grep -v bash
+          
+          
+          
+      daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+      bin:x:2:2:bin:/bin:/bin/sh
+      sys:x:3:3:sys:/dev:/bin/sh
+      sync:x:4:65534:sync:/bin:/bin/sync
+      games:x:5:60:games:/usr/games:/bin/sh
+      man:x:6:12:man:/var/cache/man:/bin/sh
+      lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+      mail:x:8:8:mail:/var/mail:/bin/sh
+      news:x:9:9:news:/var/spool/news:/bin/sh
+      uucp:x:10:10:uucp:/var/spool/uucp:/bin/sh
+      proxy:x:13:13:proxy:/bin:/bin/sh
+      www-data:x:33:33:www-data:/var/www:/bin/sh
+      backup:x:34:34:backup:/var/backups:/bin/sh
+      list:x:38:38:Mailing List Manager:/var/list:/bin/sh
+
+We have seen how to extract the list of players who play in an English club by using the grep filter utility.
+
+
+By the way, how many are they?
+
+
+It is easy to count 5, 10 lines, but after 20 lines, the risk of error grows which brings us to the wc command.
+
+
+## WC
+wc allows us to count line, character, word, etc.
+
+
+Still a small order that does not do much but who does it well! This is the concept under Gnu / Linux: no need to have an application that does everything more or less well if you can have several small applications that fit together and who do their job well!
+
+
+The use of wc: here, I will only demonstrate the line counter. For the rest, you know the man command. I invite you to discover the other options.
+
+
+If I resume the order:
+### example use of wc
+
+#use of wc
+
+
+        user@hostname:~$ cat les_buts.txt  | grep ",ang" | wc -l
+        8
+
+## Sort
+The command goes out, as its name suggests, allows us to sort content. It can be a file transmitted in parameter or coming from the standard of entry (stdin). We have already seen this command quickly in the previous section, but let's take a few minutes to explore it a bit more.
+
+
+If we take back my file with the list of players, we will still handle the players playing in England, with the grep filter.
+
+### display without sorting
+
+        user@hostname:~$ cat les_buts.txt  | grep ",ang"
+        
+        
+    Giroud         87       Arsenal,ang        fr
+    Loic           29       Newcastle,ang      fr
+    Lukaku         31       Everton,ang        be
+    Hazard         78       Chelsea,ang        be
+    Ozil           55       Arsenal,ang        de
+    Lyoris         0        Tottenham,ang      fr
+    Weelbeck       2        ManU,ang           en
+    Cabaye         65       Newcastle,ang      fr
+ 
+
+As we can see, this is not classifying. We will start by putting a little order by displaying the result with, as sorting criterion, the name of the players.
+
+### simple rank with sort
+
+
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | sort
+      
+      
+      
+    Cabaye         65       Newcastle,ang      fr
+    Giroud         87       Arsenal,ang        fr
+    Hazard         78       Chelsea,ang        be
+    Loic           29       Newcastle,ang      fr
+    Lukaku         31       Everton,ang        be
+    Lyoris         0        Tottenham,ang      fr
+    Ozil           55       Arsenal,ang        de
+    Weelbeck       2        ManU,ang           en
+
+
+It's better, but ultimately it would be better by registered goal. The problem in doing this is that the number of goals is set in the middle of the character chair. So we must tell the sort command that sorting should not be done on the first character, but on another.
+
+
+
+Sort at option - k number, which allows to define the number of the key, of the column to use for sorting. In our case, it's column 2. If we do the same sort command with the -k 2 option, what happens?
+
+
+### column 2 ranking
+
+          user@hostname:~$ cat les_buts.txt  | grep ",ang" | sort -k 2 
+          
+          
+    Lyoris         0        Tottenham,ang      fr
+    Loic           29       Newcastle,ang      fr
+    Weelbeck       2        ManU,ang           en
+    Lukaku         31       Everton,ang        be
+    Ozil           55       Arsenal,ang        de
+    Cabaye         65       Newcastle,ang      fr
+    Hazard         78       Chelsea,ang        be
+    Giroud         87       Arsenal,ang        fr
+
+
+Wowww it works! Well almost. If you look at the result, the goal scoring is a bit odd. Currently, spell does not know that these are numbers, so he made a classification based on the characters. So that sort interprets the numbers, you have to pass the option -n 
+
+### sort order with interpretation of the number
+
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | sort -k 2 -n 
+      
+      
+    Lyoris         0        Tottenham,ang      fr
+    Weelbeck       2        ManU,ang           en
+    Loic           29       Newcastle,ang      fr
+    Lukaku         31       Everton,ang        be
+    Ozil           55       Arsenal,ang        de
+    Cabaye         65       Newcastle,ang      fr
+    Hazard         78       Chelsea,ang        be
+    Giroud         87       Arsenal,ang        fr
+ 
+Yeahh, it's good!
+
+
+I let you look at the man to find the option to reverse the result ....
+
+
+## Demonstration with a command
+We saw the use of the spell with a file, but like all commands, this goes through the stream stdout> stdin.
+
+
+If we use the ps command, which allows us to list the processes that are running on the system (we'll see in detail later), it's also possible to sort or count the number of rows.
+
+
+Result of the simple order:
+### example with commands
+
+#display of the ps command
+
+      user@hostname:~$ ps aux 
+      
+      
+    [[ CUT OUTPUT  ]]
+    bob  29061  2.5  6.1 1405196 501416 ?      Sl   Jan14 292:19 /usr/lib/firefox/firefox
+    bob  29092  0.0  0.0  35188  3016 ?        Sl   Jan14   0:00 /usr/lib/at-spi2-core/at-spi-bus-launcher
+    bob  29171  0.0  0.1 178520 13864 ?        Sl   Jan14   0:12 update-notifier
+    root     29196  0.0  0.1  17980  9040 ?        S    Jan14   0:00 /usr/bin/python /usr/lib/system-service/system-service-d
+    bob  29202  0.0  0.4 250312 35512 ?        SNl  Jan14   0:43 /usr/bin/python /usr/bin/update-manager --no-focus-on-map
+    bob  29247  0.0  0.0  43944  3552 ?        Sl   Jan14   0:13 /usr/lib/deja-dup/deja-dup/deja-dup-monitor
+    [[ CUT OUTPUT  ]]
+ 
+ 
+ 
+#ranking by user
+
+
+       user@hostname:~$ ps aux  | sort
+       
+    [[ CUT OUTPUT  ]]
+    bob   9029  0.0  0.0  12384  7412 pts/8    Ss   Jan21   0:00 /bin/bash
+    whoopsie  1180  0.0  0.0  25936  4364 ?        Ssl  Jan13   0:24 whoopsie
+    www-data 12765  0.0  0.0  12276  2592 ?        S    Jan19   0:00 /usr/sbin/apache2 -k start
+    www-data 12792  0.0  0.0 235124  3240 ?        Sl   Jan19   0:00 /usr/sbin/apache2 -k start
+ 
+ 
+ 
+#Only the root user
+      
+      
+      user@hostname:~$ ps aux  | grep "root"
+      
+      
+    [[ CUT OUTPUT ]]
+    root     28837  0.0  0.0  25580  3880 ?        Sl   Jan14   0:13 /usr/lib/udisks/udisks-daemon
+    root     28840  0.0  0.0   6556   716 ?        S    Jan14   0:00 udisks-daemon: not polling any devices
+    root     29196  0.0  0.1  17980  9040 ?        S    Jan14   0:00 /usr/bin/python /usr/lib/system-service/system-service-d
+ 
+ 
+ 
+#how many processes is executed by root
+
+
+      user@hostname:~$ ps aux  | grep "root" | wc -l 
+
+     102
+     
+     
+## Uniq
+Let's look at another filtering command only, which allows us to keep only one instance of the extracted value. Let's take our football players. If I want to have players playing in the English league, but only their nationality.
+
+### soccer players extraction
+
+#Extraction of the list
+
+
+        user@hostname:~$ cat les_buts.txt  | grep ",ang"  
+        
+        
+    Giroud         87       Arsenal,ang        fr
+    Loic           29       Newcastle,ang      fr
+    Lukaku         31       Everton,ang        be
+    Hazard         78       Chelsea,ang        be
+    Ozil           55       Arsenal,ang        de
+    Lyoris         0        Tottenham,ang      fr
+    Weelbeck       2        ManU,ang           en
+    Cabaye         65       Newcastle,ang      fr
+ 
+ 
+ 
+#I only extracted the nationality list so the last column:
+
+        user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4
+
+
+With the uniq command, we will be able to remove all its duplicates to keep only the unique values.
+
+
+### demontration uniq
+
+#demontration uniq
+
+
+        user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4 | uniq
+
+
+    fr
+    be
+    de
+    fr
+    en
+    fr
+ 
+#As we see there are several entered FR, why?
+
+
+#uniq only processes the identical lines that follow so you have to
+
+
+#make a sort before the uniq
+
+
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4 | sort | uniq
+
+
+    be
+    de
+    en
+    fr
+ 
+ 
+#with the -c option it can count the entries
+
+
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4 | sort | uniq
+      2 be
+      1 de
+      1 en
+      4 fr
+ 
+## Tee
+The tee command allows us to copy the result into a file and continue to pass it to the standard output (stdout). This may be interesting to have a state during the treatment.
+
+
+Here is an example:
+### example command tee
+
+#use of the command:
+
+      user@hostname:~$ cat les_buteurs.txt | grep ",ang" | tee /tmp/buteurs_ang.txt | tr -s " " | cut -d " " -f 4 | sort |uniq -c
+      2 be
+      1 de
+      1 en
+      4 fr
+ 
+#the file /tmp/buteurs_ang.txt contains the intermediate section of the result.
+
+
+      user@hostname:~$ cat /tmp/buteurs_ang.txt 
+
+
+
+    Giroud         87       Arsenal,ang        fr
+    Loic           29       Newcastle,ang      fr
+    Lukaku         31       Everton,ang        be
+    Hazard         78       Chelsea,ang        be
+    Ozil           55       Arsenal,ang        de
+    Lyoris         0        Tottenham,ang      fr
+    Weelbeck       2        ManU,ang           en
+    Cabaye         65       Newcastle,ang      fr
+ 
+ 
+## Sed
+I will show a use of sed. This is just a simple use; we could talk for several days about the possibilities of sed. As part of this session, we will see how to replace a string of characters.
+
+
+I'm just changing the word "ang" by england:
+
+### example of sed
+
+
+        user@hostname:~$ cat les_buteurs.txt  | grep ",ang" | sed 's/ang/angleterre/g'
+
+
+      Giroud         87       Arsenal,angleterre         fr
+      Loic           29       Newcastle,angleterre      fr
+      Lukaku         31       Everton,angleterre        be
+      Hazard         78       Chelsea,angleterre        be
+      Ozil           55       Arsenal,angleterre        de
+      Lyoris         0        Tottenham,angleterre      fr
+      Weelbeck       2        ManU,angleterre           en
+      Cabaye         65       Newcastle,angleterre      fr
+
+
+## Head / Tail
+Remember head and tail which are also filter commands that allow to visuapermeatedeginning or the end of a file ...
+
+
+## Xargs 
+We are now able to extract information and display it on the screen or redirect it to a file! We will be, because it takes a little practice to be comfortable, able to handle any data. To manipulate them to meet our needs. It is possible that you need other filter commands not covered here, but know that they exist!
+
+
+But what if I want to perform an operation with the result of the command? Let's stay in the simple, because I lack imagination. I want to create a directory for each player playing in the English championship, bearing the name of their nationality. If I take the order again: 
+
+ 
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4 | sort | uniq
+
+
+    be    
+    de
+    en
+    fr
+    
+    
+The directories should be created: be, de, en and fr.
+
+
+Naturally, the idea would be to add mkdir at the end of the command, but we would have the following result:
+
+#error
+
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4 | sort | uniq | mkdir
+      mkdir: opérande manquant
+      Saisissez « mkdir --help » pour plus d'informations.
+ 
+ 
+Why? Because mkdir receives via the input standard (stdin) the list of directories, but the list of directories is NOT transmitted as a parameter to mkdir.
+
+
+To perform this operation, we must use xargs, like this:
+### example command xargs
+
+#command correct  xargs
+
+
+      user@hostname:~$ cat les_buts.txt  | grep ",ang" | tr -s " " | cut -d " " -f 4 | sort | uniq | xargs mkdir
+ 
+ 
+#result after the command with ls
+        
+        
+        utilisateur@hostname:~$ ls -l 
+        
+        
+        total 16
+        drwxr-xr-x 2 bob bob 4096 22 Jan 22:50 be
+        drwxr-xr-x 2 bob bob 4096 22 Jan 22:50 de
+        drwxr-xr-x 2 bob bob 4096 22 Jan 22:50 en
+        drwxr-xr-x 2 bob bob 4096 22 Jan 22:50 fr
+ 
+ 
+With xargs, the filter command rewrites mkdir as follows: mkdir be de en fr. So she passed the list of the result received by the stdin at the end of the command, as an argument.

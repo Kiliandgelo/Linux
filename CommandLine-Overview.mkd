@@ -1,0 +1,77 @@
+## Description of a command line interface
+A command-line interface (commonly abbreviated to CLI) is a human-machine interface in which communication between the user and the computer takes place in text mode:
+
+* the user types a command line, i.e., text on the keyboard, to request the computer to perform an operation;
+* the computer displays text corresponding to the result of the execution of the typed commands or to questions that a software poses to the user.
+
+
+A command-line interface can be used to launch the execution of various software by means of a command interpreter, as well as for dialogs with the user of this software. This is the fundamental interaction between a man and a computer (or any other computer equipment).
+
+
+
+When an interface is ready to receive a command, it indicates it by a command prompt. This, sometimes referred to as prompt anglicism, consists of a few characters at the beginning of the line (usually the user's account name, and / or the default logical drive, and / or the default path , and / or date, ...), ending with a well-known character (often "]", "#", "$" or ">"), inviting the user to type an order.
+
+## The BASH shell and other interpreters
+Under GNU / Linux the default command interpreter named Bash, there is much more like the GUI, however a majority of people use it.
+
+
+Here is the name of another shell available:
+* Korn shell
+* C shell
+* Tcsh
+* Z Shell (zsh)
+
+
+Like all script-based shell interpreters, Bash performs four basic operations:
+1. It provides a list of commands to operate on the computer (launching programs, copying files, etc.);
+2. It allows to group these commands in a single file, called script;
+3. It checks the command line, during its execution or during a possible verification procedure, and returns an error message in the event of a syntax error;
+4. In case of validation, each order line is interpreted; that is to say, translated in a language understandable by the operating system, which executes it then.
+
+
+## Command Prompt (prompt)
+If you start a terminal, you will immediately have the command prompt. Many cast presents the prompt as follows:
+
+                                               
+                   UserName@Hostname:CurrentRepertory$ 
+  
+ 
+If you are logged in with the root user, it should look like:
+
+
+
+                  root@MachineHostname:CurrentRepertory#
+
+
+
+* UserName: obviously represents the name of the user in use
+* Hostname: The name of the machine waiting for instructions at the command line.
+* Current_directory: The directory where you are. If you have the ~ character, this is equivalent to the user's home directory. So if the user names it thomas, ~ == / home / thomas
+* $ or #: $ indicates that you are logged in as a "regular" user. # indicates that you are logged in with the administrator account.
+
+
+
+Of course this invitation is customizable; we will see later how to perform this operation.
+
+
+# Using the command line (Shell / Terminal)
+## General syntax of commands
+The elementary commands under Unix are of the form:
+
+
+          command options files_or_data
+
+
+The command appearing at the beginning of the line is almost always the name of a software. This software can be a command of the operating system, a software written by a user.
+
+
+
+A command line option or an option (also sometimes called a flag) changes the operation of a command. The effect of the option depends on the command. Usually, the options immediately follow the name of the command on the command line and are separated by spaces.
+
+
+
+It is impossible to know in advance what options a program recognizes, unless you consult its documentation. However, it is common (but not systematic) for a program to display a summary of its options when it is launched from the command line with one of the following options:? - ?; -h; / ?; / H; -help; or --help.
+
+
+
+All information separated by spaces to the right of the command name is called command line arguments.

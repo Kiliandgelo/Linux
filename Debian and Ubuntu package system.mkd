@@ -1,0 +1,273 @@
+## Debian / Ubuntu package system
+* Debian package system
+* Package Management Tools
+* Introducing dpkg
+* Command available
+* Apt tools overview
+* Depot APT
+* Apt-cache tool
+* Apt-get tool
+* Aptitude tool
+
+## Debian package system
+Packages usually contain all the files needed to implement a set of commands or features. There are two kinds of Debian packages:
+
+* Binary packages containing executables, configuration files, manual or info pages, copyright information, and other documentation. These packages are distributed in a Debian-specific archive format (see What is the format of a Debian binary package ?, Section 7.2). They are usually recognizable by the ".deb" extension. They can be installed using the dpkg utility (possibly with an interface like aptitude); you will find more details in the man pages.
+* The source packages consist of a .dsc file describing the source package (including the name of the following files), an.orig.tar.gz file containing the unmodified original sources, in compressed tar format, and usually a file .diff.gzcontaining the Debian-specific changes from the original source. The dpkg-source utility allows archiving and unarchiving of Debian sources; you will find more details in the man pages. (The apt-get program can be used as an interface for dpkg-source.)
+
+
+Debian package management tools can be used to:
+* manipulate or administer packages or part of the packages,
+* administer local changes ("overrides") files of a package,
+* help developers in building packages and
+* Assist users in installing packages residing on a remote FTP server.
+
+
+The name of the Debian binary packages conforms to the following convention: _ - _. Deb
+
+## Package Management Tools
+
+dpkg - installing Debian packages
+*     apt-get   – APT front-end command line
+*      aptitude  – front-end for APT in text and command line mode
+*      synaptic  – APT front end in GTK graphics mode
+*      dselect   – package management using menus
+*      tasksel   – installation of tasks
+
+
+These tools are not all alternatives. For example, dselect uses both APT and dpkg.
+
+
+APT uses / var / lib / apt / lists / * to track available packages while dpkg uses / var / lib / dpkg / available. If you installed packages directly using aptitude or another frontend for APT and want to use dselect to install packages, be sure to update the / var / lib / dpkg / available file by selecting [M] ise update in the dselect menu (or by running dselect update).
+
+
+apt-get automatically retrieves packets that a requested package depends on. It does not install the packages recommended or suggested by the requested package.
+
+
+Ability, on the other hand, can be configured to install recommended or suggested packages.
+
+
+dselect presents the user with a list of packages that a selected package recommends or suggests and allows them to be selected or not.
+
+
+## Introducing dpkg
+dpkg (for debian package) is a command-line software tool that installs, creates, deletes and manages Debian packages (.deb), the type of packages handled by Ubuntu and Debian. For package installation, dpkg has a GUI, GDebi, which you can use if you prefer to avoid the command line.
+
+
+Unlike the apt-get command, the repository, or the GDebi GUI, dpkg is a tool that does not handle dependencies. Thus in case of conflict or when only certain packets involving too many dependencies are missing, the use of this tool becomes almost indispensable. Synaptic and other package managers use this tool to solve some typical problems. It allows to play on a single package (installation, removal, reconfiguration) without upsetting the dependencies. Among its other functions dpkg also allows to have precise information such as state or detailed description, available packages.
+
+## Command available
+* Package installation, previously downloaded
+
+### install pkg
+
+
+            user@hostname:~$ sudo dpkg -i le_package.deb
+
+* Package removal, simple binary removal and deletion with purge of configuration files or other files to be deployed by the application.
+
+### remove pkg
+#Delete package , binary
+
+        user@hotname:~$ sudo dpkg -r  package
+ 
+ 
+#Compelte delete , binary + conf file 
+
+       user@hotname:~$ sudo dpkg -P  package
+
+
+* List packages install
+
+### list pkg
+
+#List all packages
+
+      user@hostname:~$ dpkg -l
+ 
+ 
+#Research preinstalled package
+
+      user@hostname:~$ dpkg -l rsync
+ 
+#List package contains
+
+     user@hostname:~$ dpkg -L rsync
+
+* File search in the package system.
+
+### search file in pkg
+
+#Search in packages , which one had this file
+
+        user@hostname:~$ dpkg -S /etc/passwd
+
+
+# Apt tools overview
+##Dépôt APT
+APT repositories are "software sources", specifically servers that contain a set of packages. Using a tool called package manager, you can access these repositories and, with a few mouse clicks, you can find, download and install the software of your choice.
+
+
+Ubuntu also includes a basic tool called Update Manager, which periodically checks in the repositories to which you have access that you have the latest versions of your software and libraries; otherwise, it allows you to update them automatically.
+
+
+Deposits that Ubuntu accesses by default, to check for software updates and search for software to install, are repositories maintained by the Ubuntu Foundation (the Ubuntu development group) and your installation CD. You can expand (or reduce) the list of deposits available to your system by adding or removing deposits from other distributors. (see: modify deposits)
+
+
+Under Ubuntu, the vast majority of applications are available in official repositories and are directly installable using graphical tools such as The Ubuntu Software Center.
+
+
+There's nothing stopping you from installing software from other repositories or websites, but be careful, because these programs are not tested by the Ubuntu development team and can be dangerous for your system. , or just badly integrate into your environment, have bugs ...
+
+### Official deposit
+Access to official repositories is automatically configured. They include basic repositories, update and security repositories. All branches of the main depots are divided into four sections:
+* Main and Restricted sections, maintained by Ubuntu developers
+
+
+The main (free packages) and restricted (non-free packages) sections contain packages maintained by the Ubuntu developers for the lifetime of the Ubuntu version you are using.
+
+* Universe and Multiverse Sections, maintained by the Communist
+
+
+The universe and multiverse sections of the official repositories contain packages maintained by the community. The Ubuntu Foundation does not control these packages; they are analyzed by a user committee. The universe section contains only free packages and the multiverse section, non-free packages. Access to these two sections is set by default.
+
+## Apt-cache tool
+apt-cache is an interface for performing some basic manipulation of installed and unpacked packages available in the cached list of configured APT repositories. It does not require administrative rights.
+
+### Command
+* Package search
+
+### search pkg internet
+
+      user@hostname:~$ apt-cache search software
+
+* Displays detailed package information
+
+### show pkg internet info
+
+      user@hostname:~$ apt-cache showpkg package
+
+* Displays package dependencies
+### dependency list pkg
+
+      user@hostname:~$ apt-cache depends package
+
+## Apt-get tool
+Advanced Packaging Tool is a complete and advanced package management system, allowing easy and efficient search, easy installation and clean uninstallation of software and utilities. It also makes it easy to keep your Ubuntu distribution up-to-date with the latest versions and upgrade to a new version of Ubuntu when it's available.
+
+### Command
+* Updating the local cache containing the package list
+
+
+The apt-get system does not communicate continuously on the Internet, the system makes a local cache of the list of available packages. This has the advantage of not wasting time at each installation, the bad side is that you have to update this list manually, otherwise when you try to install a package the apt-get will give you the error: " 404 not found "of the desired package. To update the list type the following command:
+
+### update pkg cache
+
+        user@hostname:~$ sudo apt-get update
+        
+        
+    Ign http://us.archive.ubuntu.com precise InRelease
+    Ign http://us.archive.ubuntu.com precise-updates InRelease
+    Ign http://us.archive.ubuntu.com precise-backports InRelease
+    Ign http://security.ubuntu.com precise-security InRelease
+    Hit http://us.archive.ubuntu.com precise Release.gpg
+    Hit http://security.ubuntu.com precise-security Release.gpg
+    Hit http://us.archive.ubuntu.com precise-updates Release.gpg
+    Hit http://security.ubuntu.com precise-security Release
+    Hit http://us.archive.ubuntu.com precise-backports Release.gpg
+    Hit http://us.archive.ubuntu.com precise Release
+
+
+....
+
+
+....
+
+* Package installation
+Once the package name known to make the command, this will install the latest available version:
+
+### install pkg internet
+
+      user@hostname:~$ sudo apt-get install package_name
+
+* If you want to install an older version:
+
+### install pkg old version
+
+      user@hostname:~$ sudo apt-get install package_name=version -V 
+
+* Deleting package
+Removed package we saw that it is possible to use dpkg with the option -r (remove) or -P (purge), it is also possible to perform the operation via apt-get:
+
+### remove pkg
+
+      user@hostname:~$ sudo apt-get remove package_name 
+ 
+ 
+or
+ 
+      user@hostname:~$ sudo apt-get purge package_name
+
+* Update
+2 arguments are available to update, upgrade and dist-upgrade The upgrade option updates all the packages installed on the system to the latest (commonly used) versions. The dist-upgrade option updates all installed packages to the latest versions by installing new packages as needed, as opposed to the simple upgrade that does not add new packages. Caution dist-upgrade will NOT update version 12.04 to 12.10 however it will update the latest version of the kernel and other new non-present package.
+
+### update system
+
+      user@hostname:~$ sudo apt-get upgrade
+ 
+and 
+ 
+      user@hostname:~$ sudo apt-get dist-upgrade
+      
+      
+* Obtaining sources
+If you want to recover the sources of software that you have installed:
+
+### install pkg source
+
+      user@hostname:~$ sudo apt-get source package_name
+
+* Deleting cached packages
+The apt-get system uses a cache directory (/ var / cache / apt / archives) to download its packages, this can take a lot of space over time, it is possible to clean:
+
+### remove pkg en cache
+
+    user@hostname:~$ sudo apt-get clean 
+
+## Aptitude tool
+Aptitude is an APT-based package manager, which means you can install, remove, and update software (packages) with Aptitude. It has features equivalent to dselect or apt-get. There are two ways to use Aptitude:
+* in a way similar to apt-get;
+* with an interactive interface.
+ 
+### Installation
+To install a package, you will have to do as with Synaptic: find it, select it for installation, and then apply. To search for a package, press "/". You will then be in front of a search box. Enter the name of the package and the search will be done automatically. Once the name is written in full, press "Enter." If it's not the corresponding package, press "n" to search for the next package that contains the searched terms, until you find the package to install. When the package is found, press the "+" key to select it for installation. Dependencies will be automatically selected too. To confirm the changes press "g" again press "g" to confirm or "q" to return to the previous screen.
+
+
+In summary :
+* " / " for research
+* "N" to continue the search (next)
+* "+" To select for installation
+* "=" To maintain the package in its current version
+* "G" (first time) confirm changes (go)
+* "G" (second time) to apply the changes (go)
+
+### removal
+To delete a package, it is necessary to follow the same approach, so search with "/", then select for deletion with "-" or, to delete the configuration files too, "_" and finally confirm with "g" and apply with another "g". You will notice that packages that were automatically installed by Aptitude to satisfy dependencies will be automatically deleted if they are no longer used.
+
+
+In summary :
+* "-" for a simple deletion (apt-get remove)
+* "_" For deleting the package and its configuration files (apt-get remove -purge)
+* "=" To maintain the package in its current version
+* "G" (first time) confirm changes
+* "G" (second time) to apply the changesUpdate
+
+
+To update the list of available packages, simply press "u". To update packages that can be updated, press "U", then "g" to confirm and another time to apply. To update only one package in all that can be updated, act as if you wanted to install it, find it and then press "+", "g" and again "g".
+
+
+In summary :
+* "U" update of the package list (apt-get update)
+* "U" package update (apt-get upgrade)
+* "G" (first time) confirm changes
+* "G" (second time) to apply the changes

@@ -1,0 +1,96 @@
+## Help directly from the command line
+* The MAN Command (Manual)
+* Find an Command with MAN
+* Documentation website
+
+## The MAN Command (Manual)
+Each command has an online manual page (called manpages).
+
+
+This online help is very useful for knowing how to use the orders and know the exhaustive list of all available options.
+
+
+To access this online help, simply type man. example:
+
+### command ls
+
+    user@hostname:/home$ man ls
+
+The man pages are divided into sections
+
+1. Executable programs or shell commands
+2. System calls (functions provided by the kernel)
+3. Library calls (functions provided by the program libraries)
+4. Special files (usually located in / dev)
+5. Formats of files and conventions. For example / etc / passwd
+6. Games
+7. Miscellaneous (including macropacks and conventions). For example, man (7), groff (7)
+8. System Management Commands (usually reserved for the superuser)
+9. Kernel subroutines [out of standard]
+
+
+Some commands are at the same time system commands, system calls or configuration files (example: passwd). It is possible to indicate the section which one wishes to consult:
+### command man
+
+     $ man passwd             # the man page of the passwd command
+     $ man 5 passwd           # the man page of the / etc / passwd configuration file
+
+
+The man pages are divided into different chapters (extracted from man 7 man):
+
+### Chapters of the man pages
+
+
+| <b><u>chapter</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [SYNOPSIS] | Briefly indicates the interface of the command or function. For commands, this paragraph shows its syntax and arguments. Bold characters mark the invariable text, and italics indicate replaceable arguments. The brackets enclose the optional arguments, the vertical bars (pipe character) separate the alternatives, and the ellipses ... signal the repetitions. For functions, we find all #include statements and directives, followed by the function declaration.| 
+| :small_orange_diamond: [DESCRIPTION] | Provides an explanation of what the command, function, or format represents. Describes interactions with files and standard input, or what is produced on standard output or error. Does not contain internal implementation details unless they are critical to understanding the interface. Describes the main case, for the details on the options, we use the paragraph OPTIONS. If there is some kind of input grammar, or a set of subcommands, we can put them in an extra USE section (and place a brief overview in the DESCRIPTION section).| 
+| :small_orange_diamond: [RETURN VALUE] | Gives a list of the values that a library routine will return to the caller and the conditions that cause these returns.| 
+| :small_orange_diamond: [EXIT STATUS] | Indicates the return codes of a program and associated conditions. | 
+| :small_orange_diamond: [OPTIONS] | Describes the options accepted by the program and their influence on its behavior. | 
+| :small_orange_diamond: [USAGE] | Describes the grammar of any implemented sub-language.| 
+| :small_orange_diamond: [EXAMPLES ] | Give one or more examples of how to use the function, file or command. | 
+| :small_orange_diamond: [FILES] | List the files used by the program or function, such as configuration files, startup files, and files directly manipulated by the program. You must give the full path of the files and use the installation mechanism to change the prefix. For most programs, the default installation is in / usr / local, so your basic manual page should use / usr / local as the base.|
+| :small_orange_diamond: [ENVIRONMENT] | Describes all environment variables that affect the program or function, and their effects. | 
+| :small_orange_diamond: [DIAGNOSTICS] | Provides an overview of common error messages and how to look at them. It is not necessary to specify system error messages or fatal signals that may appear during program execution unless they are specially processed. | 
+| :small_orange_diamond: [SECURITY] | Describes security issues and their implications Must contain warnings about configurations or environments to avoid, commands with security implications, etc. especially if they are not obvious. It is not mandatory to make a specific paragraph on security. If intelligibility is improved, this information can be placed in other sections (such as DESCRIPTION or USAGE). Nevertheless, it is important to place the security information somewhere. | 
+| :small_orange_diamond: [CONFORMING TO ] | Describes the standards or conventions followed by the implementation. | 
+| :small_orange_diamond: [NOTES] | Contains various notes. | 
+| :small_orange_diamond: [BUGS] | List the limitations or defects identified, as well as the topics for debate. | 
+| :small_orange_diamond: [AUTHOR] | List the authors of the documentation or program so that you can send them the bug reports. | 
+| :small_orange_diamond: [SEE ALSO] | Provides a list of the manual pages that have a report, in alphabetical order, followed by any other documents. This is usually the last section. | 
+
+
+## Find an command with MAN
+You may say to me: "it's fine the command man to have documentation, but if I do not know the command to use, how do I do?" 
+
+
+The -k option allows you to search through all available pages.
+
+
+Here is an example of a result for the word password:
+### command man option -k
+
+      user@hostname:~$ man -k password
+
+    chage (1)            - change user password expiry information
+    chgpasswd (8)        - update group passwords in batch mode
+    chpasswd (8)         - update passwords in batch mode
+    cpgr (8)             - copy with locking the given file to the password or gr...
+    cppw (8)             - copy with locking the given file to the password or gr...
+    crypt (3)            - password and data encryption
+    crypt_r (3)          - password and data encryption
+    endpwent (3)         - get password file entry
+    endspent (3)         - get shadow password file entry
+    expiry (1)           - check and enforce password expiration policy
+    fgetpwent (3)        - get password file entry
+    fgetspent (3)        - get shadow password file entry
+    fgetspent_r (3)      - get shadow password file entry
+
+As you can see, the number in parenthesis is the manual number, for example (1) equals the "Executable Programs" manual.
+
+https://help.ubuntu.com/13.10/ubuntu-help/index.html
+http://stackoverflow.com/
+http://www.omgubuntu.co.uk/ 
+http://www.webupd8.org/ 
+

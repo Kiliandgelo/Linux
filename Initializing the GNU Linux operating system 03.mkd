@@ -1,0 +1,22 @@
+# Initializing the GNU / Linux operating system
+## Summary
+
+Here is a summary of the system initialization step
+### 1. The system is booting through the BIOS
+
+
+the BIOS tests the presence of various devices and tries to allocate the necessary resources for conflict-free operation.
+
+
+### 1. The BIOS loads the boot loader (GRUB)
+### 2. The user chooses his kernel and the initrd associated with it
+
+
+allows to load the operating system, under Linux, we use a bootloader, currently the most popular is GRUB, there are also other software such as lilo, etc.
+
+
+### 1. The initrd is loaded, the kernel modules are loaded and the root (/) is mounted
+
+
+### 1. Initialization is done by / sbin / init
+

@@ -1,0 +1,440 @@
+# Don't worry, you'll blow them away!
+* Introduction
+* Image of the srvmailrelay container
+* DockerFile
+* DockerFile configuration file
+* DockerFile executable file (bin)
+* DockerFile executable file (bin) DFG
+* DockerFile executable (bin) run
+* Creating the image from the Dockerfile
+* Using the container from the image
+* Manual container initialization
+* Initializing the container with Docker-Compose
+
+## Introduction
+In the light of your interest in docking, we will see the part of the dockerization of the relay server, the big advantage of dockeriser this service is that it changes very little. I created an image specifically for the training to reduce the number of parameters, to simplify the demonstration. For the little context, this image is used on all my "datacenters", good good I'm excited a little there, I should say on my server at the data center and at home: P. The only thing left is that I got pissed off once and now I can use it everywhere by setting parameters according to location: D. In other words I will pass in the name of the relay server, by the very fact that my ISP is BELL, Videotron, Roger can be important when starting, I will indicate the destination. This will be the same principle for networks that I authorize to use the SMTP service of my server.
+
+
+Let's see the configuration now that we are comfortable with postfix, it will be easier.
+
+
+Let's start with the DockerFile and then we will see the files used.
+
+### DockerFile
+Here is the content:
+    
+    FROM debian:jessie     
+    MAINTAINER Uri Savelchev <alterrebe@gmail.com>    
+    # Ignore APT warnings about not having a TTY     
+    ENV DEBIAN_FRONTEND noninteractive     
+    # Packages: update     
+    RUN apt-get update -qq &&         
+    apt-get install -qq -y --no-install-recommends postfix ca-certificates                  
+    libsasl2-modules python-pip supervisor rsyslog &&         
+    pip install j2cli     
+    # Fix timezone     
+    RUN ln -s -f /usr/share/zoneinfo/Canada/Eastern /etc/localtime    
+    # Add files    
+    ADD conf /root/conf     
+    # Configure: supervisor     
+    ADD bin/dfg.sh /usr/local/bin/     
+    ADD conf/supervisor-all.conf /etc/supervisor/conf.d/     
+    # Runner     
+    ADD run.sh /root/run.sh     
+    RUN chmod +x /root/run.sh     
+    # Declare     
+    EXPOSE 25     
+    CMD ["/root/run.sh"]
+
+
+Well now that I look at it, there are points that bother me, this container dates and there are things I like less ... But hey. As you can see I left the name of the original maintainer. I was part of an image available on the internet and I made some changes.
+
+* FROM debian: jessie: So I started from a debian version jessie, [Debian 8.7 was released January 14th, 2017) (https://www.debian.org/releases/stable/)
+* ENV DEBIAN_FRONTEND noninteractive: A definition of an environment variable so that it does not pose a question, which could not be answered because it must be automatic.
+* RUN apt-get update, apt-get install and pip install: We realize the installation of the required pacques for the system as you can see there is of course postfix as well as the system of log rsyslog. In addition there is other pasting python-pip and supervisor, I install the python-pip system because in order to modify the postfix configuration file I will use the jinja2 system which is a template system. This will allow me to change the configuration of postfix by passing parameters during startup. The application I will use is j2cli documentation. For supervisor this application allows to start applications in foreground (Forground) this will keep the container running while using the command service, even if the application is by default put in the background.
+* RUN ln -s -f / usr / share / zoneinfo / Canada / Eastern / etc / localtime: Good here it's less beautiful, I define the timezone of the container directly in the image instead of using the environment variable TZ = America / Montreal. This is less good because if I had a "datacenter" in Morocco for example I should create another image for the server is the right time. While if I had passed the variable at startup this could have been configuration during initialization. (I was lazy, to change it: P, we'll fight for others: D)
+* ADD conf / root / conf: Copy of the configuration files, we will see this is the postfix "templates" files
+* ADD bin / dfg.sh / usr / local / bin /: Addition of a script realized by Uri, well it works, I find that it broke a little head, but learn methods of all to create our configuration: D. We will take a look at the script too.
+* ADD conf / supervisor-all.conf /etc/supervisor/conf.d/: Foreground application startup system configuration file (forground)
+* ADD run.sh /root/run.sh and RUN chmod + x /root/run.sh: Container start script
+* EXPOSE 25: Indicates that port 25 must be exposed, I personally set this configuration with when initializing the container.
+* CMD ["/root/run.sh"]: Entry point when starting the container.
+
+
+Nothing fabulous the whole treatment is really in the startup script and the modification of the configuration files.
+
+
+Let's start with the configuration files.
+
+## DockerFile fichier de configuration
+
+As mentioned all the configuration files are in the conf directory, there are 2 files:
+* postfix-main.cf: This file contains the description of the configuration of postfix, this file is of type jinja2, let's look at the content:
+
+      smtpd_banner = $myhostname 
+      ESMTP $mail_name (Ubuntu) 
+      biff = no
+      # appending .domain is the MUA's job. 
+      append_dot_mydomain = no 
+      # Uncomment the next line to generate "delayed mail" warnings 
+      #delay_warning_time = 4h 
+      readme_directory = no 
+      # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for 
+      # information on enabling SSL in the smtp client. 
+      smtpd_relay_restrictions = permit_mynetworks 
+      permit_sasl_authenticated defer_unauth_destination myhostname = $myorigin 
+      alias_maps = hash:/etc/aliases 
+      alias_database = hash:/etc/aliases 
+      myorigin = {{ RELAY_HOST_NAME }} 
+      mydestination = {{ RELAY_HOST_NAME }} {% if (EXT_RELAY_HOST != "Not_DEFINE") 
+      %}relayhost = {{ EXT_RELAY_HOST }} {% endif %} 
+      mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 {{ ACCEPTED_NETWORKS }} 
+      mailbox_size_limit = 0 
+      recipient_delimiter = + 
+      inet_interfaces = all 
+      inet_protocols = ipv4
+
+* We find all postfix configurations that we have already covered, I will not go back on the subject, I will focus on the variables in the file that are framed with {{and}}
+* myorigin = {{RELAYHOSTNAME}}: This variable will be the name of the machine that will be presented when sending (hostname)
+* mydestination = {{RELAYHOSTNAME}}: By default in the configuration I define that the machine accepts emails for its machine name.
+* {% if (EXTRELAYHOST! = "NotDEFINE")%} relayhost = {{EXTRELAYHOST}} {% endif%}: A little more complicated, to put in context I wanted to have the same image at the data center (OVH) and at home, unfortunately at home I am obliged to go through my ISP. As part of OVH emailing can be done directly, so I put a condition. If the variable {{EXTRELAY_HOST}} is not equal to "Not_DEFINE" then the value is assigned to the relayhost statement. It's a simple if: D.
+* mynetworks = ... {{ACCEPTED_NETWORKS}}: Allows you to further define by setting the networks that are allowed to transmit their emails by this machine.
+* Of course the number of parameters is not limited, we will see the substitution process.
+* supervisor-all.conf: The configuration for the supervisor system, in this case the configuration is "static":
+
+        [supervisord] 
+        logfile = /var/log/supervisord.log 
+        logfile_backups = 0 
+        [program:rsyslogd] 
+        command = /usr/sbin/rsyslogd -n 
+        [program:postfix] 
+        command = /usr/local/bin/dfg.sh /var/spool/postfix/pid/master.pid /etc/init.d/postfix start startsecs = 3
+
+## DockerFile executable file (bin)
+
+### DockerFile executable file (bin) DFG
+If we look a little higher you will see that the postfix startup command uses a homemade script named dfg for the Forground daemon. As mentioned before this is to keep a process in the foreground (forground) even if the process was put in the background by the system as is the case when using scripts under / etc / init.d
+
+
+As mentioned I personally would not have done as such, but just as much shown other way to do after all it is also used to that the free to learn from others! It can always give ideas for another project / need!
+
+      #! /usr/bin/env bash    
+      set -eu      
+      # dfg: Daemon Foreground    
+      # Runs in foreground while a daemon is running and proxies signals to it.   
+      # As a result, a daemonizing process can be run with supervisor     
+      function display_help(){         
+      cat <<EOF     
+      dfg: Daemon Foreground     
+      Starts a daemon and runs in foreground while the daemon is active, and proxies signals.    
+      As a result, a daemonizing process can be run with supervisor.     
+      Usage: $(basename $0)       
+      EOF     
+      }     
+      [ $# -lt 2 ] && display_help     
+      # Arguments     
+      pidfile="$1"     
+      shift     
+      command=$@     
+      # Go foreground, proxy signals    
+      function kill_app(){        
+      kill $(cat $pidfile)        
+      exit 0     
+      }     
+      trap "kill_app" SIGINT SIGTERM    
+      # Launch daemon     
+      $command    
+      sleep 2     
+      # Loop while the pidfile and the process exist    
+      while [ -f $pidfile ] && kill -0 $(cat $pidfile) ; do         
+      sleep 0.5     
+      done     
+      exit 1000
+
+
+Good soon you can have fun, take it, modify it, do some tests, some point:
+* [$ # -lt 2] && display_help: If there are no 2 parameters to the script the system displays the help with the display_help function.
+* pidfile = "$ 1": The first parameter is the file containing the process number (PID)
+* shift: the system remove the first parameter from the command line
+* command = $ @: assign to the variable $ command the entire remaining command line (as done after the shift all but the pid file)
+* $ command: Start of the command passed in parameter.
+* while: The loop system
+* [-f $ pidfile]: It validates that the pid file is still present
+* kill -0 $ (cat $ pidfile): In addition to validating the presence of the file, it validates that the PID is working by sending the signal 0, so nothing of all at the number of the process.
+* If the file AND sends the sign works then it performs a sleep 0.5 seconds.
+
+
+So that's basically the important point: D, now it's up to you to have fun !!
+
+## DockerFile executable (bin) run
+Place the container execution file, the most important! We will see variable substitution and postfix startup.
+
+
+Let's see the contents of the file:
+
+      #! /usr/bin/env bash     
+      set -e # exit on error     
+      # Variables     
+      export EXT_RELAY_HOST=${EXT_RELAY_HOST:-"email-smtp.us-east-1.amazonaws.com"}     
+      export EXT_RELAY_PORT=${EXT_RELAY_PORT:-"25"}     
+      export RELAY_HOST_NAME=${RELAY_HOST_NAME:-"relay.example.com"}     
+      export ACCEPTED_NETWORKS=${ACCEPTED_NETWORKS:-"192.168.0.0/16 172.16.0.0/12 10.0.0.0/8"}    
+      export OTHER_MY_DEST     
+      echo $RELAY_HOST_NAME > /etc/mailname    
+      # Templates     
+      j2 /root/conf/postfix-main.cf > /etc/postfix/main.cf     
+      # Launch     
+      rm -f /var/spool/postfix/pid/*.pid     
+      exec /usr/bin/supervisord -n
+
+
+Yep is not long: D, then we like it, it's easier to understand!
+* Definition of the variables, I will take one for the example, but the concept applies for all.
+* export RELAY_HOST_NAME=${RELAY_HOST_NAME:-"relay.example.com"}
+* We assign the environment variable RELAY_HOST_NAME to RELAY_HOST_NAME, uh, it's the same name ... (I know, we're in the morning, I have not got a bus yet !!) all this plays afterwards: - "rela .. If the variable RELAY_HOST_NAME is empty no value then it will assign the default value which is defined after the characters:: -. Magic !! We learn every day a little more to use bash: D. set of variables this does not oblige us all to define: D.
+* Assigning the machine name to the file / etc / mailname, some application uses it is cleaner.
+* j2: IMPORTANT all the manipulation of the configuration file is realized here, with the command j2 (installed with pip) the system will take the environment variables and make the substitution. By default the result is displayed on the screen so we redirect to the correct postfix file: /etc/postfix/main.cf
+* rm * .pid: A little cleanup of the pid files in case there are some data that drag: D.
+* Start supervisord for the service.
+
+
+And here we have our image ready to use!
+
+
+## Creating the image from the Dockerfile
+Little recalls the use of docker build to create the final image that you can move wherever you want. We have already seen the order, but for those who have not followed the other courses or all simply a reminder because you have not used much.
+
+
+Realization of the creation of the image, go to the directory where it finds the Dockerfile:
+
+      $ docker build -t srvmailrelay .
+
+* -t srvmailrelay: this is the name of the image that I have assigned of course free to you to change it.
+
+
+Let's validate it all:
+
+      $ docker images | grep srvmailrelay     
+      srvmailrelay                  latest              d42998a69f7c        23 hours ago        182 MB
+
+
+Yeah we can go to the other section: D.
+
+
+## Using the container from the image
+I hope the explanation was not too fast, you'll have time to digest all of it quietly, let's move on to using the container now. How to initialize it properly, we'll see the manual operation and the prettier operation with the docker-compose.
+
+
+## Manual container initialization
+When I say manual, I mean with the docker run statement and all the parameters on the command line, this is very handy when testing but when setting "in production" this to these limits.
+
+
+As a reminder we had some variables available:
+* RELAY_HOST_NAME=relay.example.com: Machine name (hostname) that will be assigned to the SMTP server
+* ACCEPTED_NETWORKS=192.168.0.0/16 172.16.0.0/12 10.0.0.0/8: The list of networks that are allowed to transmit their email by the server
+* EXT_RELAY_HOST=email-smtp.us-east-1.amazonaws.com: The name of the relay server if used.
+
+
+We could have had more option, but it's already good: D, free to you to add what you need :).
+
+
+So if we initialize the container, here is an example of use:
+
+
+      $ docker run -d -h relay.example.com -e ACCEPTED_NETWORKS='192.168.0.0/16 172.16.0.0/12 10.0.0.0/8' -e EXT_RELAY_HOST=relay.mon_fai.com srvmailrelay     4670b8a8ea8a86381ed77d08f1cf603128b0adbf3c7f720dad4d7e86820e5e24    
+      
+      $ docker ps     
+      CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES     
+      4670b8a8ea8a        srvmailrelay         "/root/run.sh"      45 seconds ago      Up 44 seconds      25/tcp              distracted_lamport
+
+We will recover a shell on the container to validate the configuration.
+
+      $ docker exec -it mailrelay bash    
+      
+      root@relay:/# cat /etc/postfix/main.cf     
+      smtpd_banner = $myhostname ESMTP $mail_name (Ubuntu)     
+      biff = no     # appending .domain is the MUA's job.     
+      append_dot_mydomain = no     
+      # Uncomment the next line to generate "delayed mail" warnings    
+      #delay_warning_time = 4h     
+      readme_directory = no    
+      # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for     
+      # information on enabling SSL in the smtp client.     
+      smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination     
+      myhostname = $myorigin     
+      alias_maps = hash:/etc/aliases     
+      alias_database = hash:/etc/aliases     
+      myorigin = relay.example.com     
+      mydestination = relay.example.com     
+      relayhost = relay.mon_fai.com     
+      mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 192.168.0.0/16 172.16.0.0/12 10.0.0.0/8     
+      mailbox_size_limit = 0     
+      recipient_delimiter = +     
+      inet_interfaces = all     
+      inet_protocols = ipv4     
+      root@relay:/#
+
+
+You can use the template jinja2 and validate that all the variables were substituted, quickly:
+
+* relayhost = relay.monfai.com : uses the variable EXT_RELAY_HOST=relay.monfai.com
+* mynetworks = ...192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 : uses the variable ACCEPTED_NETWORKS='192.168.0.0/16 172.16.0.0/12 10.0.0.0/8'
+
+
+I would like to focus on the myorigin parameter: if we look at the template file it should be the value of the RELAY_HOST_NAME variable. A value was assigned when the container was initialized when calling the run.sh script.
+
+
+We validate the other configuration WITHOUT relayhost: D.
+
+      $ docker run -d -h relay.example.com  -e ACCEPTED_NETWORKS='192.168.0.0/16 172.16.0.0/12 10.0.0.0/8' -e EXT_RELAY_HOST=Not_DEFINE srvmailrelay       614f2846a28e5b1adbeac48a199d0e3f117e42822137493d7fbb425b0df73136    
+      $ docker ps    
+      CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES     
+      614f2846a28e        srvmailrelay        "/root/run.sh"      13 seconds ago      Up 11 seconds       25/tcp              ecstatic_bose    
+      4670b8a8ea8a        srvmailrelay        "/root/run.sh"      3 minutes ago       Up 3 minutes        25/tcp              distracted_lamport     
+      
+      $ docker exec -it ecstatic_bose bash     
+      
+      root@relay:/# cat /etc/postfix/main.cf     
+      smtpd_banner = $myhostname ESMTP $mail_name (Ubuntu)    
+      biff = no     
+      # appending .domain is the MUA's job.     
+      append_dot_mydomain = no    
+      # Uncomment the next line to generate "delayed mail" warnings     
+      #delay_warning_time = 4h     
+      readme_directory = no    
+      # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for     
+      # information on enabling SSL in the smtp client.     
+      smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination     
+      myhostname = $myorigin     
+      alias_maps = hash:/etc/aliases     
+      alias_database = hash:/etc/aliases    
+      myorigin = relay.example.com     
+      mydestination = relay.example.com     
+      mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 192.168.0.0/16 172.16.0.0/12 10.0.0.0/8     
+      mailbox_size_limit = 0     
+      recipient_delimiter = +     
+      inet_interfaces = all     
+      inet_protocols = ipv4
+
+
+Yeah it works, as you can see now the relayhost entry is no longer present: D, because in the template if the variable EXT_RELAY_HOST == Not_DEFINE it allows the system to transmit directly to the internet. I know my condition is not great, at least Not_DEFINE should be something like DIRECT_TO_THE_WORLD, it will do you an exercise: P.
+
+
+As you can see I have 2 containers that are running at the same time very convenient for testing !!
+
+
+Well that's good, it works but in 3 months if you need to restart it, you will look in your bash history and it is likely that the order neither is more. So there "Panic Office": P, that's why I strongly urge you to use a docker-type file
+
+
+Ok I will delete the current containers:
+  
+      $ docker ps     
+      CONTAINER ID        IMAGE               COMMAND            CREATED             STATUS              PORTS               NAMES     
+      614f2846a28e        srvmailrelay        "/root/run.sh"      8 minutes ago      Up 8 minutes        25/tcp              ecstatic_bose     
+      4670b8a8ea8a        srvmailrelay        "/root/run.sh"      11 minutes ago     Up 11 minutes       25/tcp              distracted_lamport     
+      
+      $ docker stop ecstatic_bose distracted_lamport     ecstatic_bose     distracted_lamport    
+      
+      $ docker rm ecstatic_bose distracted_lamport                                                                                                              ecstatic_bose     distracted_lamport
+
+## Initializing the container with Docker-Compose
+You can use a configuration file that will allow the initialization of your container, the advantage of course is to have a file on the system with all the initialization information. This also allows you to add a lot of options simply and to consult them easily.
+
+
+I put an example of the file in the directory of the srvmailrelay container definition.
+
+
+Here is the content of the docker-compose.yml file:
+
+      mailrelay:           
+      image: 'srvmailrelay'           
+      restart: unless-stopped           
+      container_name : 'mailrelay'           
+      hostname: 'relais.example.com'           
+      environment:               
+      - ENABLE_SASL_AUTH=no               
+      - RELAY_HOST_NAME=monServerDeRelaisInterne.example.com               
+      - ACCEPTED_NETWORKS=172.17.0.0/16              
+      #- EXT_RELAY_HOST=Not_DEFINE               
+      - EXT_RELAY_HOST=relai.fai.com               
+      - OTHER_MY_DEST="localhost.example.com, localhost"          
+      volumes:               
+      - '/tmp/mailrelay/var-spool-postfix:/var/spool/postfix'      
+      #    ports:               
+      # - "IP_INTERNE:25:25"
+
+
+Line by line:
+* mailrelay:: this is the name of the service, when we will use several container for the management of a service we will see more the utility it is kept for later: D
+* images: srvmailrelay: This indicates which docker image is used, if we use an available images in a registry the system will automatically download it to start it
+* restart: unless-stopped: restart, if the docker service restarts (see a reboot server), this container must be restarted, with this parameter it will automatically restart unless it was stopped manually beforehand.
+* hostname: 'relais.example.com': the name of the "machine" (hostname)
+* environment:: this defines a list of environment variables that will be passed to the container during initialization, as you can see there is more variable here, this is because my docker image is slightly different: P .
+* - RELAY_HOST_NAME=monServerDeRelaisInterne.example.com
+* - ACCEPTED_NETWORKS=172.17.0.0/16
+* - EXT_RELAY_HOST=relai.fai.com
+* volumes:: defines the list of directories that will be linked between the local machine AND the container
+* In the present situation I take the directory / var / spool / postfix why? The goal is to keep emails that are waiting if I recreate the container. : D
+* ports: Allows the association to be used for the use of the docker-proxy to provide the service on the networks external to the machine.
+
+
+Sounds good, we try it?
+
+
+I move to the directory where the docker-compose.yml file is located:
+    
+      $ ls     bin  conf  docker-compose.yml  Dockerfile  README.md  run.sh     
+      $ docker-compose up    
+      Creating mailrelay     
+      Attaching to mailrelay     
+      mailrelay    | /usr/lib/python2.7/dist-packages/supervisor/options.py:296: UserWarning: Supervisord is running as root and it is searching for its configuration file in default locations (including its current working directory); you probably want to specify a "-c" argument specifying an absolute path to a configuration file for improved security.     
+      mailrelay    |   'Supervisord is running as root and it is searching '     
+      mailrelay    | 2022-01-25 16:42:25,336 CRIT Supervisor running as root (no user in config file)     
+      mailrelay    | 2022-01-25 16:42:25,336 WARN Included extra file "/etc/supervisor/conf.d/supervisor-all.conf" during parsing     
+      mailrelay    | 2022-01-25 16:42:25,351 INFO RPC interface 'supervisor' initialized    
+      mailrelay    | 2022-01-25 16:42:25,351 CRIT Server 'unix_http_server' running without any HTTP authentication checking    
+      mailrelay    | 2022-01-25 16:42:25,351 INFO supervisord started with pid 1     
+      mailrelay    | 2022-01-25 16:42:26,354 INFO spawned: 'postfix' with pid 11    
+      mailrelay    | 2022-01-25 16:42:26,358 INFO spawned: 'rsyslogd' with pid 12     
+      mailrelay    | 2022-01-25 16:42:27,397 INFO success: rsyslogd entered RUNNING state, process has stayed up for > than 1 seconds (startsecs)     
+      mailrelay    | 2022-01-25 16:42:29,909 INFO success: postfix entered RUNNING state, process has stayed up for > than 3 seconds (startsecs)
+
+
+By default the docker-compose up command starts the container in the foreground (forground) we will have to add the -d option so that it is in the background
+
+      $ docker ps     
+      CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS               NAMES     
+      aed60f4756cf        srvmailrelay        "/root/run.sh"      19 seconds ago      Up 18 seconds       25/tcp              mailrelay
+
+Validation of the configuration:
+
+      $ docker exec -it mailrelay bash    
+      
+      root@relais:/# cat /etc/postfix/main.cf     
+      smtpd_banner = $myhostname 
+      ESMTP $mail_name (Ubuntu)     
+      biff = no     
+      # appending .domain is the MUA's job.     
+      append_dot_mydomain = no     
+      # Uncomment the next line to generate "delayed mail" warnings     
+      #delay_warning_time = 4h     
+      readme_directory = no     
+      # See /usr/share/doc/postfix/TLS_README.gz in the postfix-doc package for    
+      # information on enabling SSL in the smtp client.     
+      smtpd_relay_restrictions = permit_mynetworks permit_sasl_authenticated defer_unauth_destination     
+      myhostname = $myorigin     
+      alias_maps = hash:/etc/aliases     
+      alias_database = hash:/etc/aliases    
+      myorigin = monServerDeRelaisInterne.example.com     
+      mydestination = monServerDeRelaisInterne.example.com    
+      relayhost = relai.fai.com     
+      mynetworks = 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128 172.17.0.0/16    
+      mailbox_size_limit = 0     
+      recipient_delimiter = +     
+      inet_interfaces = all     
+      inet_protocols = ipv4     
+      root@relais:/#
+
+
+As they say, it's beautiful: D
+

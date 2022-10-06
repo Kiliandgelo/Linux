@@ -1,0 +1,98 @@
+## Definitions
+There are two types of links that allow you to redirect one file to another: physical links (hard) and soft links (soft).
+
+## Symbolic link (symlink)
+The symbolic link is a "fake file" or a "fake folder" that contains the path of a "real file" or "real folder". Once a symbolic link has been established, for the majority of applications, the target file or folder is real. And when you delete a symbolic link, the original file or folder does not change anything. In the other direction, if we destroy the source file / folder of a symbolic link, it does not disappear, and during a ls, it will appear flashing and in error, it will be a link "broken".
+
+
+A natural use of the symlink is to "end up" a folder / file from one end of the file system tree to another folder, but leaving it "physically" where it is.
+
+
+the other aspect of the symbolic link, it can link different file systems. That is, we can make a symbolic link between any of the folders / files without worrying about the type of editing of the parent folder (usb key, cd-rom, nfs, etc.).
+
+
+Now, the disadvantage of symbolic links remains their relative slowness. Indeed, each entry in a linked folder, the symbolic link file will have to be read by the system, interpreted, then it will have to close to open the "real" file or folder. It is not very recommended on a web server for example where a folder will be accessed hundreds of times per minute.
+ 
+ 
+## Hard link (hardLink)
+If the symbolic link is managed by the operating system and does not depend on the file system used, the link "hard" is directly managed by a file system. This means that it will not work for all file systems. A volume mounted in FAT for example will not pass, but all serious FS have the hard-link (ext3, reiser, xfs, etc. ..).
+
+
+To understand what hard-links are, it must be understood that, for file systems that support it, all files / folders are hard links. Indeed, it is necessary here to distinguish two notions: the name of the file (with its name, its path, etc.) and the block of data (a packet of 0 and 1 located at a position N of the hard disk). When creating a file, the system will first allocate a block of data on the hard disk, then make a hard link between this block of data and the file name.
+
+
+For example, if you have a file named foo.txt in the folder / my_folders, the file name /my_data/toto.txt is actually a hard-link between the data block of the foo file. txt (the 0's and the 1's) and the file name you gave it (including its path). So there is always at least 1 hard-link between foo.txt and the data it represents. So, to make a hard-link on foo.txt, is actually to create a second one ...
+
+
+This feature gives a very useful property to hard-link: the data block of a file continues to exist (is not destroyed) as long as at least one hard-link points to it. So if I have, to use the previous example, my data block pointed to by / me_data/toto.txt and /other_path/tutu.txt. If I destroy foo.txt, the data block is not destroyed and for the system, it's as if it's always called tutu.txt and it's always been in the / other_path folder. On the other hand, if I destroy tutu.txt, the data block is lost, the file is physically destroyed ...
+
+
+As a result, unlike symbolic links, hard-links can not be made between two different file system files, let alone between two volumes of different origin (usb, cd-rom, etc.). Another consequence is that we can only create a hard link in two file systems.
+ 
+ 
+# In practice
+## Creating a symbolic link (soft link)
+
+We use the ln command to make a symbolic link with the -s option, here's an example:
+
+### example creation symbolic link and visualization
+
+    #Creation of the file etc_passwd which points to the real file / etc / passwd
+    $ ln -s /etc/passwd etc_passwd
+ 
+    #Viewing the file.
+    $ ls -l etc_passwd
+    lrwxrwxrwx 1 user group 11 fév  5 12:24 etc_passwd -> /etc/passwd
+
+In the above example I use the absolut path definition, so with the use of / at the beginning of the system root. It is also possible to define a relative path, however the definition of the link will not be any more good if the file of the symlink is moved here is a demonstration.
+
+### example symbolic link file with relative path
+
+```
+#use relative path for file definition
+$ ln -s ../etc/passwd  passwd_relatif
+ 
+#Link visualization
+$ ls -l passwd_relatif
+lrwxrwxrwx 1 user group 13 fév  5 12:27 passwd_relatif -> ../etc/passwd
+ 
+#creation of a directory
+$ mkdir nouveau_rep
+ 
+#move link files into the directory
+$ mv passwd_relatif etc_passwd nouveau_rep 
+ 
+#visualization
+$ ls -l nouveau_rep 
+lrwxrwxrwx 1 user group 11 fév  5 12:24 etc_passwd -> /etc/passwd
+lrwxrwxrwx 1 user group 13 fév  5 12:27 passwd_relatif -> ../etc/passwd
+ 
+#The passwd_relative file is BROKEN
+#while etc_passwd is OK
+```
+
+## Creating a hard link
+We use the ln command to make a hard link but this time without arguments: 
+
+```
+#Creating the hard link
+$ sudo ln /etc/passwd hard_link_passwd
+ 
+#Viewing the file
+$ ls -l 
+lrwxrwxrwx 1 user   group     11 fév  5 12:24 etc_passwd -> /etc/passwd
+-rw-r--r-- 2 root   root    2653 nov 29 15:51 hard_link_passwd
+```
+
+We note that unlike the symbolic link we no longer see the reference to the file identifier with the characters ->. However if we look after the permissions the first file the symbolic link to the number 1 while the hard link to the number 2, this indicates that the data on the 2-link hard drive associated with files.
+
+
+However, it is not possible to make a symbolic link between 2 partition or device:
+
+### example problem creating Hardlink file between a usb key and the /
+
+
+    #creation of a hardlink between a USB key and the partition /
+    :/mnt/USB_KEY $ ln /etc/passwd hd_passwd
+    ln: creating hard link `hd_passwd' => `/etc/passwd': Invalid cross-device link
+

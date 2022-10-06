@@ -1,0 +1,11 @@
+## LVM
+* http://www.redhat.com/magazine/009jul05/features/lvm2/
+* https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/6/html/Logical_Volume_Manager_Administration/
+* https://wiki.archlinux.org/index.php/LVM
+* http://en.wikipedia.org/wiki/Logical_Volume_Manager_%28Linux%29
+
+## RAID
+* http://en.wikipedia.org/wiki/RAID
+* https://wiki.archlinux.org/index.php/Software_RAID_and_LVM
+* https://access.redhat.com/documentation/en-US/Red_Hat_Enterprise_Linux/4/html/Introduction_To_System_Administration/s2-storage-raid-credel.html
+* https://chriscowley.me.uk/blog/2013/04/07/stop-the-hate-on-software-raid/

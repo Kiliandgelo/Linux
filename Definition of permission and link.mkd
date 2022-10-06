@@ -1,0 +1,128 @@
+# Permissions
+## Some files on the system
+* /etc/passwd
+### file / etc / passwd
+  
+      -rw-r--r-- 1 root root 1706 Jan 22 05:26 /etc/passwd
+
+
+Who can edit the file?
+
+
+Who can read the file?
+
+
+Can user Thomas member of the root group modify the file?
+
+* /etc/shadow
+### file / etc / shadow 
+
+      -rw-r----- 1 root shadow 1295 Jan 22 05:26 /etc/shadow
+
+
+Who can read the file?
+
+
+Without being root or using sudo how can I read the file?
+
+* /var/lib/mysql
+### /var/lib/mysql
+
+      drwx------ 11 mysql mysql 4096 Dec 24 06:29 /var/lib/mysql
+
+
+Is it a file or a directory?
+
+
+who can consult it?
+
+* /var/lib/mysql/ib_logfile0
+### /var/lib/mysql/ib_logfile1
+
+      -rw-rw---- 1 mysql mysql 5242880 Feb  6  2013 /var/lib/mysql/ib_logfile1
+
+
+If I am a member of the mysql group, will I be able to read the file? attention remember the permissions of / var / lib / mysql
+
+# Link
+
+## Symbolic link (Soft Links)
+Symbolic links are much more used than links hard (hardlink), I think that the visual side of the symbolic link facilitates are use. Moreover the symbolic link can be used for the directories which is not possible with the links hard. Here are some uses of symbolic link
+
+## definition of java binary
+It is common to see the java binary defines with a symbolic link, like this:
+
+### link for java
+
+      /usr/bin/java --> /usr/bin/java6.40
+
+it is even possible that under Ubuntu to have several symbolic link here is an example:
+
+### alternative java
+
+      /usr/bin/java -> /etc/alternatives/java
+
+but if I look at / etc / alternatives / java this is another symbolic link
+
+### multiple link
+
+      /etc/alternatives/java -> /usr/lib/jvm/java-6-sun/jre/bin/java
+      #in other words
+      /usr/bin/java -> /etc/alternatives/java -> /usr/lib/jvm/java-6-sun/jre/bin/java
+
+
+this has the advantage of setting all system software to use / usr / bin / java regardless of the actual binary used. So we can easily have multiple versions of Java installed and switch from one to another without any other changes than the / usr / bin / java pointer.
+
+
+## Shared library (shared library / DLL)
+Another example of soft link usage is for the definition of shared libraries, the equivalent of DLLs,. As seen in the definition of the partitions, these files are found in the / lib or / usr / lib directory if we list the symbolic links in the directory:
+
+### list the links in the / usr / lib directory
+
+      #list the links in the / usr / lib directory
+      $ ls -l /usr/lib/ | grep ^l | head
+      lrwxrwxrwx  1 root root           27 oct  8 23:51 libaccountsservice.so.0 -> libaccountsservice.so.0.0.0
+      lrwxrwxrwx  1 root root           17 nov 28  2011 libaften.so.0 -> libaften.so.0.0.8
+      lrwxrwxrwx  1 root root           20 aoû 27 16:05 libapparmor.so.1 -> libapparmor.so.1.0.2
+      lrwxrwxrwx  1 root root           17 avr  3  2012 libapphb.so.2 -> libapphb.so.2.0.0
+      lrwxrwxrwx  1 root root           25 mar  7  2013 libappindicator3.so.1 -> libappindicator3.so.1.0.0
+      lrwxrwxrwx  1 root root           24 mar  7  2013 libappindicator.so.1 -> libappindicator.so.1.0.0
+      lrwxrwxrwx  1 root root           17 mar 20  2012 libapr-1.so.0 -> libapr-1.so.0.4.6
+      lrwxrwxrwx  1 root root           22 déc 18  2011 libaprutil-1.so.0 -> libaprutil-1.so.0.3.12
+      lrwxrwxrwx  1 root root           19 oct 17  2011 libaspell.so.15 -> libaspell.so.15.2.0
+      lrwxrwxrwx  1 root root           20 déc  2  2011 libasprintf.so -> libasprintf.so.0.0.0
+ 
+# it is likely that you do not have the same file but the idea remains the same.
+If we look at the files the usual use is to tell the software to use the .so file with the version number "short" so if I take line 4, with libaften bookseller. All software that needs version 0 of the libaften library will load the file /usr/lib/libaften.so.0 which is actually the file /usr/lib/libaften.so.0.0.8. You will find that it uses the absolut nomenclature to name the file. If version 0.0.9 is available the libaften.so.0.0.9 file will be created and the symlink will be modified to point to it. The advantage is that this is totally transparent for the applications that were compiled on the system!
+
+## Data directory to another directory
+Here are the partitions of the system:
+### show hard drives
+
+      #partitioning 2 partition
+      $ df -h
+      /dev/md1         20G   13G  6.3G  67% /
+      /dev/md2        897G  6.0G  846G   1% /data
+ 
+ 
+If my database takes up too many spaces and by default it is in the directory / var / lib / db, if I want to move it to the directory / data / db, where I have more hard disk space to store the information. Ideally it is better to change the configuration of the software, unfortunately it is not always possible to do so. I can create a symlink to replace / var / lib / db so that it points to the other partition, this gives:
+
+### Moving data + creating a symbolic link
+
+      #stop of  BD
+      $ sudo /etc/init.d/DB stop (ici utiliser la bonne commande )
+ 
+ 
+      #moving data
+      $ sudo mv  /var/lib/db /data
+ 
+ 
+      #creation of the symbolic link
+      $ sudo ln -s /data/db /var/lib/db
+ 
+ 
+      #reboot the system
+      $  sudo /etc/init.d/DB start (ici utiliser la bonne commande )
+ 
+ 
+And finish.

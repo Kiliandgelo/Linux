@@ -1,0 +1,230 @@
+# File Sharing with NFS
+## Description
+Network File System (or NFS) is a protocol developed by Sun Microsystems in 19842 that allows a computer to access files over a network. It is part of the application layer of the OSI model and uses the RPC protocol.
+
+
+This networked file system allows data sharing primarily between UNIX systems. Versions exist for Macintosh or Microsoft Windows.
+
+
+There are several versions of the NFS protocol, we will see the sharing NFSv3 in this training possibly, I will try to do in another session NFSv4 training however this requires more configuration and infrastructure. Here is a description of NFS v3 and v4:
+
+## NFSv3
+* Processing variable size files
+* TCP support
+* NFSv3 does not support authentication (Kerberos), NFS mount privileges are granted to the client host and not to the user. Thus, any user on a client host with access permissions can access the exported file systems. When configuring NFS shares, pay particular attention to hosts that obtain read / write (rw) permissions.
+
+## NFSv4
+Designed to meet the needs of the Internet, NFSv4 includes:
+* Total security management:
+  * Negotiation of the security level between the client and the server Simple security,
+  * kerberos5 support, SPKM and LIPKEY4 certificates
+  * Encryption of communications possible (kerberos 5p for example)
+* Increased support for scalability:
+  * Reduction of traffic by grouping of requests (compound) Delegation (the client manages the file locally)
+* Simplified maintenance systems:
+  * Migration: The NFS server is migrated from machine A to machine B transparently for the client
+  * Replication: Server A is Replicated on Machine B
+* Incident recovery
+  * Incident recovery management is integrated on the client and server side.
+* Compatibility
+  * NFSv4 can be used on Unix and on MS-Windows. It is available on Mac from Mac OS X Lion (10.7) 5.
+  * Support of several transport protocols (TCP, RDMA)
+
+
+However, these NFSv4 enhancements make NFSv4 incompatible with NFSv3.
+
+## NFSv3 and services
+Installation of nfs:
+
+### Installing the NFS server
+
+    $ sudo apt-get install nfs-kernel-server
+    
+    
+NFSv3 uses Remote Procedure Calls (RPCs) to encode and decode queries between clients and servers. Linux RPC services are controlled by the portmap service. To share or mount NFS file systems, the following services work together, depending on the version of NFS that is implemented:
+
+* nfs - A service that launches the appropriate RPC processes to respond to queries for shared NFS file systems.
+* nfslock - An optional service that launches the appropriate RPC processes to allow NFS clients to lock files on the server.
+* portmap - The RPC service for Linux; it responds to requests for RPC services and defines connections to the RPC service. It is not used with NFSv4.
+
+
+The following RPC processes facilitate NFS services:
+* rpc.mountd - This process receives the mount request from an NFS client and verifies that the requested file system is exported. This process is started automatically by the nfs service and does not require any configuration at the user level. This process is not used with NFSv4.
+* rpc.nfsd - This process is the NFS server. It works with the Linux kernel to satisfy dynamic requests from NFS clients, such as providing server threads (or threads) whenever an NFS client connects. This process corresponds to the nfs service.
+* rpc.lockd - An optional process that allows NFS clients to lock files on the server. It corresponds to the nfslock service. This process is not used with NFSv4.
+* rpc.statd - This process implements the Network Status Monitor (NSM) protocol RPC protocol that warns NFS clients when a server is restarted without first shutting down properly. This process is started automatically by the nfslock service and does not require any configuration at the user level. This process is not used with NFSv4.
+* rpc.rquotad - This process provides information about user quotas that apply to remote users. It is started automatically by the nfs service and does not require any configuration at the user level.
+
+## Portmap and NFSv3
+The portmap service on Linux is required to direct RPC requests to the appropriate services. RPC processes announce to portmap when they start, revealing the port number they control and the RPC program numbers they intend to serve. The client system then contacts portmap on the server with a particular RPC program number. The portmap service then redirects the client to the correct port number to communicate with the desired service.
+
+
+Because RPC-based services rely on portmap to ensure all connections to incoming client requests, portmap must be available before each of these services is started.
+
+
+NFS Service Management:
+-------------------------
+
+In order to run an NFS server, the portmap service must be running. To verify that portmap is enabled, type the following command as superuser:
+
+### RPC service validation
+
+    $ sudo service rpcbind status
+    rpcbind start/running, process 8948
+    
+ 
+If the portmap service is running, then the fs service can be started. To start an NFS server, type the following command:
+
+### nfs process validation
+
+    $ sudo service nfs-kernel-server status
+    nfsd running
+    
+
+Validation that portmap is running:
+
+
+To ensure that the correct RPC-based NFS services are enabled for portmap, use the following command:
+
+### rpc test
+
+    $ sudo rpcinfo -p 127.0.01
+    
+
+If your machine does NOT have NFS to boot you will have this:
+
+### rpc result without the NFS server
+```
+   program vers proto   port  service
+    100000    4   tcp    111  portmapper
+    100000    3   tcp    111  portmapper
+    100000    2   tcp    111  portmapper
+    100000    4   udp    111  portmapper
+    100000    3   udp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  59489  status
+    100024    1   tcp  38480  status
+```
+
+If the machine has NFS asset server you will have:
+
+### rpcinfo with an active NFS server
+
+```
+ $ rpcinfo -p 127.0.0.1
+   program vers proto   port  service
+    100000    4   tcp    111  portmapper
+    100000    3   tcp    111  portmapper
+    100000    2   tcp    111  portmapper
+    100000    4   udp    111  portmapper
+    100000    3   udp    111  portmapper
+    100000    2   udp    111  portmapper
+    100024    1   udp  59489  status
+    100024    1   tcp  38480  status
+    100003    2   tcp   2049  nfs
+    100003    3   tcp   2049  nfs
+    100003    4   tcp   2049  nfs
+    100227    2   tcp   2049
+    100227    3   tcp   2049
+    100003    2   udp   2049  nfs
+    100003    3   udp   2049  nfs
+    100003    4   udp   2049  nfs
+    100227    2   udp   2049
+    100227    3   udp   2049
+    100021    1   udp  48335  nlockmgr
+    100021    3   udp  48335  nlockmgr
+    100021    4   udp  48335  nlockmgr
+    100021    1   tcp  52433  nlockmgr
+    100021    3   tcp  52433  nlockmgr
+    100021    4   tcp  52433  nlockmgr
+    100005    1   udp  37990  mountd
+    100005    1   tcp  59737  mountd
+    100005    2   udp  60466  mountd
+    100005    2   tcp  46106  mountd
+    100005    3   udp  45776  mountd
+    100005    3   tcp  45285  mountd
+```
+
+## Configuring NFSv3
+The / etc / exports file not only controls the specific file systems that are exported to remote hosts, but also allows you to specify options. White lines are not taken into account, comments can be mentioned by adding a pound sign (#) at the beginning of the line and a line break can be introduced with a backslash (). Each exported file system must have its own line and all allowed host lists placed after an exported file system must be separated by spaces. The options for each host must be placed in parentheses directly after the host ID, with no space between the host and the first parenthesis.
+
+
+The line for an exported file system has the following structure:
+
+### export file syntax
+
+    <export> <host1>(<options>) <hostN>(<options>)...
+    
+
+The following methods can be used to specify host names:
+* single host - Where a particular host is specified with a fully qualified domain name, a host name, or an IP address.
+* wildcards - Where * or? are used to account for a pool of fully qualified domain names that correspond to a given chain of letters. Wildcards (also called wildcards) should not be used with IP addresses; however, it is possible that they work by accident, if DNS reverse lookups fail. However, be careful when using wildcards with fully qualified domain names because they are often more accurate than you expect. For example, if you use * .example.com as a wildcard, sales.example.com will be allowed to access the exported file system, but not bob.sales.example.com. For a match that includes both domain names, you will need to specify * .example.com and *. *. Example.com.
+* IP networks - Allow host mapping based on their IP address in a larger network. For example, 192.168.0.0/28 will allow the first 16 IP addresses, from 192.168.0.0 to 192.168.0.15, to access the exported file system, but not 192.168.0.16 or higher IP address.
+* network groups - Assign an NIS network group name, writing as: @. This option assigns the NIS server the access control load for this exported file system, where users can be added and deleted in a NIS group without affecting / etc / exports.
+
+
+In its simplest form, the / etc / exports file specifies only the exported directory and the hosts allowed to access it, as in the following example:
+
+### example export file
+
+    /exported/directory bob.example.com
+
+In this example, bob.example.com can mount / exported / directory /. Because no options are specified in this example, the default NFS options take effect:
+* ro - The mountings of the exported file system are read-only. Remote hosts can not modify the shared data on the file system. To allow hosts to make changes to the file system, the rw (read-write) option must be specified.
+* wdelay - This option delays NFS disk write operations if it suspects that another write request is imminent. In doing so, performance can be improved by reducing the number of disk accesses by separate write commands, thereby reducing write time. The option no_wdelay deactivates this function but is available only when using the sync option.
+* root_squash - This option removes the remote login privilege from all status privileges by assigning the nfsnobody user ID. In doing so, the power of the remote superuser is reduced to the lowest user level, preventing it from making unauthorized changes to files on the remote server. Otherwise, the no_root_squash option overrides this superuser privilege reduction feature. To limit the scope of each remote user, including the superuser, use the all_squash option. To specify user and group IDs for use with remote users of a particular host, use the anonuid and anongid options respectively. In this case, a special user account can be created for remote NFS users to share and specify (anonuid =, anongid =), where is the user ID number, and is the group ID number .
+
+
+All default values for each exported file system must be explicitly overwritten. For example, if the rw option is not specified, the exported file system is shared read-only. The following example is a line in / etc / exports that overwrites the two default options: 
+
+### example with options
+
+    /another/exported/directory 192.168.0.3(rw,sync)
+
+In this example, 192.168.0.3 can mount / another / exported / directory / read / write and all transfers to disk are committed before the client write request is completed.
+
+
+In addition, other options are available where there is no default. They allow you to undo subtree checking, access to unsafe ports, and non-secure file locking (necessary for some older NFS client implementations). See the exports manual page for more information on these less commonly used options.
+
+
+To reload the configuration restart the service or use the command:
+
+### reload configuration exportfs
+
+    sudo /usr/sbin/exportfs -a 
+    
+## Using NFSv3 from a client
+Accessing the NFS share with the mount command without the persistence of the reboot configuration, to access we use the mount command with the server name and share directory, for example:
+
+### Using NFS as a client.
+
+    $ sudo mount ServerName_nfs:/exported/directory /mnt/MountPoint
+    
+    
+For configuration permanently on the next reboot:
+
+
+Edit the / etc / fstab file with the following information
+
+### configuration for FSTab syntax.
+
+    <server>:</remote/export> </local/directory> <nfs-type> <options> 0 0
+    
+Here is an example:
+
+### example configuration.
+
+    ServerName_nfs:/exported/directory /mnt/MountPoint nfsv3 default 0 0
+
+## File permissions
+Once the NFS file system is mounted read-write by a remote host, the only protection available to each shared file is at its permissions. If two users sharing the same user ID value mount the same NFS file system, they will be able to edit the files mutually. In addition, anyone logged in as superuser on the client system can use the su - command to become a user with access to particular files via the NFS share.
+
+
+The default behavior when exporting a file system via NFS is to use the root squashing feature. The latter is used to define the user ID of any person accessing the NFS share as superuser on their local computer, a value of the server's nobody account. It is strongly recommended never to disable this function.
+
+
+If you are exporting a NFS share as read-only, consider using the all_squash option that gives any user accessing the exported file system the user ID of nfsnobody.
+
+
+REF: http://web.mit.edu/rhel-doc/4/RH-DOCS/rhel-rg-en-4/ch-nfs.html
+

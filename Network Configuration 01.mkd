@@ -1,0 +1,387 @@
+# Configuring the network adapter
+
+## Description
+In this section we will mainly deal with the TCP / IP protocol, if you want to configure another type of network you will have to consult the appropriate documentation. We will see the configuration for Debian / Ubuntu and Redhat / CentOS this covers the two most popular families. As we use Ubuntu I will start with Redhat this will be done and we will be able to focus on our distribution. Yes again, some difference although minimal they are present.
+
+
+The network configuration includes:
+* The hostname (machine name)
+* The definition of an ip address
+* The definition of a netmask
+* The gateway definition
+* DNS definition
+
+Nomenclature of network cards under GNU / Linux:
+
+## Understand Linux terms and network concept
+Let's start with a bit of lexicon to understand this about the choice of terms, and this will allow you to better understand the documentation available on the Internet.
+
+
+Device: the physical device, this can be an ethernet network card as we are used to using or any other network device.
+
+
+Interface: The interface is what is used by the operating system to communicate with the device. This is the software part that makes the transition from the whole system to the physical side. As we have seen this operation is performed by the kernel, the interface is the result of the operation performed by the driver / driver / module kernel.
+
+
+GNU / Linux uses the following nomenclature to name interfaces: eth0, eth1, eth2, ....
+
+
+The first network card (device) is associated with the eth0 interface (eth0 usable by the system)
+
+
+The second network card (currency) is associated with the eth1 interface (eth1 usable by the system)
+
+
+Etc, you understand the principle.
+
+
+In addition to the eth * interfaces, there is the lo interface, this refers to a virtual device that is the localhost (127.0.0.1). This interface allows for local network connections without using the external interface.
+
+## Visualization of the network configuration
+There is 2 command to view the TCP / IP configuration of the system.
+
+
+ifconfig and ip.
+
+
+I strongly urge you to focus your efforts on the ip command, eventually this will be the only command available. Linux is in transition to the new command, some distribution no longer offers ifconfig.
+
+## Using ifconfig
+As mentioned this command will disappear however you will find it again in a lot of documentation so it is interesting to know it. We are currently focusing solely on visualization, it is possible to assign ip addresses with the ipconfig command. If you use this method know that during the next reboot configuration will be lost, so this practice is not recommended except for a test. It is always relevant to view the man page!
+
+ipconfig allows us to view:
+* ip address
+* the network mask
+* the broadcast address
+* the mac address ipV4, ipV6
+* The number of packets transmitted and received
+* The amount of data transferred
+
+
+Here is an example of using ifconfig:
+
+### example using ifconfig
+
+```
+admuser@srv01:~$ /sbin/ifconfig 
+eth0      Link encap:Ethernet  HWaddr 08:00:27:e8:c1:19  
+          inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0
+          inet6 addr: fe80::a00:27ff:fee8:c119/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:68 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:62 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:10319 (10.3 KB)  TX bytes:7793 (7.7 KB)
+ 
+lo        Link encap:Local Loopback  
+          inet addr:127.0.0.1  Mask:255.0.0.0
+          inet6 addr: ::1/128 Scope:Host
+          UP LOOPBACK RUNNING  MTU:65536  Metric:1
+          RX packets:0 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:0 
+          RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
+ 
+ 
+# or with argument:
+admuser@srv01:~$ /sbin/ifconfig  eth0
+eth0      Link encap:Ethernet  HWaddr 08:00:27:e8:c1:19  
+          inet addr:10.0.2.15  Bcast:10.0.2.255  Mask:255.255.255.0
+          inet6 addr: fe80::a00:27ff:fee8:c119/64 Scope:Link
+          UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
+          RX packets:105 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:88 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:13001 (13.0 KB)  TX bytes:11293 (11.2 KB)
+```
+
+We find all essential information such as ip, netmask, mac addresses, packet transmitted communication information, in error, ...
+
+```
+The values below are reset when the interface is disabled (module unloaded and reloaded) or when the machine reboots.
+          RX packets:105 errors:0 dropped:0 overruns:0 frame:0
+          TX packets:88 errors:0 dropped:0 overruns:0 carrier:0
+          collisions:0 txqueuelen:1000 
+          RX bytes:13001 (13.0 KB)  TX bytes:11293 (11.2 KB)
+```
+
+## Using route / netstat -r
+the route command allows us to see the network routing configured on the machine, in addition to the command route the netstat command is also usable with the -r option:
+
+### example route and netstat -r
+
+```
+#route use
+admuser@srv01:~$ route 
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags Metric Ref    Use Iface
+default         10.0.2.2        0.0.0.0         UG    100    0        0 eth0
+10.0.2.0        *               255.255.255.0   U     0      0        0 eth0
+ 
+#use of netstat
+admuser@srv01:~$ netstat  -r
+Kernel IP routing table
+Destination     Gateway         Genmask         Flags   MSS Window  irtt Iface
+default         10.0.2.2        0.0.0.0         UG        0 0          0 eth0
+10.0.2.0        *               255.255.255.0   U         0 0          0 eth0
+
+```
+
+As you can see you can see the default route with the output interface, I will not make an explanation of the routing here, it's not in the scope of training.
+
+## Know the state of the interface (mii-tool)
+We have listed the IP address and the routing table, we also saw with ifconfig that it is possible to see the amount of data transferred but no information on the communication mode of the interface, sum us in 10 half- duplex? , 100 full-duplex? To answer this question it is possible to use the mii-tool command, this command can also manipulate the interface to change this configuration.
+
+### exemple utilisation mii-tool
+
+```
+#as a simple user
+admuser@srv01:~$ mii-tool eth0
+SIOCGMIIPHY on 'eth0' failed: Operation not permitted
+ 
+#Obviously you have to be root to perform the operation
+admuser@srv01:~$ sudo mii-tool eth0
+[sudo] password for admuser: 
+eth0: no autonegotiation, 1000baseT-FD flow-control, link ok
+```
+
+## Viewing the hostname
+The hostname command allows to display .... yes yes the hostname of the machine: D, is not it fabulous?
+
+### example of the hostname command
+
+    admuser@srv01:~$ hostname
+    srv01
+ 
+## Configuring DNS Visualization
+The configuration of the DNS is done in the file /etc/resolv.conf This file includes the list of usable DNS, when the attempt of resolution the system takes the first one, if the latter does not answer it will take the following one, etc. It is possible to define a search domain so that for example if I only type srvLdap, it tries to add the domain name provided for example x3rus.com. Here is an example of the configuration file:
+
+### exemple fichier resolv.conf
+
+    admuser@srv01:~$ cat /etc/resolv.conf 
+    nameserver 8.8.8.8
+    nameserver 8.8.4.4
+    search bob.com
+ 
+## Visualization of the configuration with the ip command
+
+As mentioned the ip application will eventually be available for the entire configuration, this command is already available on all systems. We will see this command.
+
+
+Visualization of the ip address with ip, the command is simple ip addr show:
+
+### exemple utilisation ip pour afficher l'ip
+
+```
+#only all interfaces
+admuser@srv01:~$ ip addr show
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 08:00:27:e8:c1:19 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::a00:27ff:fee8:c119/64 scope link
+       valid_lft forever preferred_lft forever
+ 
+#only an interface
+admuser@srv01:~$ ip addr show eth0
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 08:00:27:e8:c1:19 brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::a00:27ff:fee8:c119/64 scope link
+       valid_lft forever preferred_lft forever
+```
+
+We find the information of the ip address and the mac address of the interface, again we have the interface eth0 and lo, it is possible to extract the information of a single interface.
+
+
+Visualization of routes:
+
+### example use ip to display the route
+
+```
+admuser@srv01:~$ ip route show
+default via 10.0.2.2 dev eth0  metric 100 
+10.0.2.0/24 dev eth0  proto kernel  scope link  src 10.0.2.15
+```
+
+The content is clear, we see the default route as well as the route for the nearby network on eth0.
+
+
+It is possible to have information on packets received and transferred:
+
+### example use ip show statistics
+
+```
+admuser@srv01:~$ ip link
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 08:00:27:e8:c1:19 brd ff:ff:ff:ff:ff:ff
+ 
+admuser@srv01:~$ ip -s link
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN 
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    RX: bytes  packets  errors  dropped overrun mcast   
+    0          0        0       0       0       0      
+    TX: bytes  packets  errors  dropped carrier collsns 
+    0          0        0       0       0       0      
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP qlen 1000
+    link/ether 08:00:27:e8:c1:19 brd ff:ff:ff:ff:ff:ff
+    RX: bytes  packets  errors  dropped overrun mcast   
+    8574220    8824     0       0       0       0      
+    TX: bytes  packets  errors  dropped carrier collsns 
+    404681     3628     0       0       0       0      
+```
+
+## Configuration of the temporary ip.
+configuration of the ip address but without using the configuration files, this will have the advantage of allowing you to do configuration tests without altering the configuration, however do not forget to modify the configuration files once the configuration is properly defined .
+
+### example ip definition manually.
+
+```
+#old configuration
+admuser@srv01:~$  sudo ifconfig eth0 10.0.2.17 netmask 255.255.255.0 
+admuser@srv01:~$  sudo route add default gw 10.0.2.2
+ 
+#configuration with ip
+admuser@srv01:~$  sudo /sbin/ip addr add 10.0.2.17/24 dev eth0
+admuser@srv01:~$  sudo /sbin/ip route add default via 10.0.2.2 
+ 
+ 
+# edit the /etc/resolv.conf file to set the DNS name.
+```
+
+
+Attention this is really only for tests.
+
+
+# Redhat / CentOS network configuration
+The set of configuration files are of course in the / etc directory under RedHat there is a directory called sysconfig which includes system configuration.
+
+## Definition of the hostname
+Let's start by name our system and activate the network system, to do this we edit the file / etc / sysconfig / network here is an example of the file:
+
+### /etc/sysconfig/network
+
+    NETWORKING=yes
+    HOSTNAME=your_hostname.yourDomain.com
+
+
+Of course by changing the Variable NETWORKING to NO the network service will be disabled ... Who would like to do that ??
+
+## Setting the ip address
+The configuration of the IP address does this as follows, we edit the file ifcfg-nameInterface contained in the directory / etc / sysconfig / network-scripts / so if we manipulate the interface eth0 we will edit the file: / etc / sysconfig / network-scripts / IFCF-eth0. Here is 2 example of configuration one with DHCP request and the other with fixed ip.
+
+### example file / etc / sysconfig / network-scripts / ifcfg-eth0
+
+```
+DEVICE="eth0"
+BOOTPROTO="dhcp"
+HWADDR="00:0C:29:CC:F6:96"
+IPV6INIT="yes"
+MTU="1500"
+NM_CONTROLLED="yes"
+ONBOOT="yes"
+TYPE="Ethernet"
+```
+
+
+fixed ip version:
+
+### static ifcfg-eth0 example
+
+```
+DEVICE=eth0
+BOOTPROTO=static
+BROADCAST=192.168.1.255
+IPADDR=192.168.1.5
+NETMASK=255.255.255.0
+NETWORK=192.168.1.0
+ONBOOT=yes
+GATEWAY=192.168.1.1
+```
+
+## Definition of dns
+To define the DNS to use edit the file /etc/resolv.conf and add the ip of the servers with the prefix nameserver here is an example with the DNS of google.
+
+### example resolv.conf file
+
+```
+admuser@srv01:~$ cat /etc/resolv.conf 
+nameserver 8.8.8.8
+nameserver 8.8.4.4
+search bob.com
+```
+we therefore have 2 dns servers 8.8.8.8 and 8.8.4.4.
+
+
+## Restarting the network service
+Now that all files are modified we can restart the network service, take note that when changing DNS server it is NOT mandatory to restart the service:
+
+### network service restart
+
+```
+admuser@srv01:~$ sudo service network restart
+ 
+or
+ 
+admuser@srv01:~$ sudo /etc/init.d/network restart
+```
+
+## Ubuntu / Debian network configuration
+The manual configuration of the ip address is still possible and works on both systems without problem, however the configuration for the operating system differs somewhat, the DNS file does not change we still find /etc/resolv.conf however the definition of the ip address is in the file / etc / network / interfaces here is an example with DHCP configuration and the other with ip fix .:
+
+### example network configuration / etc / network / interfaces
+```
+#This file describes the network interfaces available on your system
+#and how to activate them. For more information, see interfaces(5).
+ 
+#The loopback network interface
+auto lo
+iface lo inet loopback
+ 
+#The primary network interface
+auto eth0
+iface eth0 inet dhcp
+```
+
+and with ip static
+### exemple configuration interfaces ip fix
+
+```
+#This file describes the network interfaces available on your system
+#and how to activate them. For more information, see interfaces(5).
+ 
+#The loopback network interface
+auto lo
+iface lo inet loopback
+ 
+auto eth0
+iface eth0 inet static
+        address 192.168.10.119
+        netmask 255.255.255.0
+        network 192.168.10.0
+        broadcast 192.168.10.255
+        gateway 192.168.10.254
+```
+
+## Restarting the network service
+For restarting only interfaces we proceed like this:
+
+### restart network service ubuntu
+
+```
+admuser@srv01:~$  sudo /etc/init.d/network-interface restart
+ 
+or
+
+admuser@srv01:~$  sudo service network-interface restart
+```
+

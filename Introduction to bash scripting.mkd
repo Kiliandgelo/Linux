@@ -1,0 +1,597 @@
+# Introduction to bash scripting
+
+## Definition
+A scripting language is a programming language that manipulates the functionality of a computer system configured to provide the interpreter of that language with an environment and an interface that determines the capabilities of that language. The scripting language can then be freed from low-level constraints - supported through the interface - and benefit from high-level syntax.
+
+
+The scripting language is usually run from files containing the source code of the program that will be interpreted. Historically, they have been created to shorten the traditional development-edition-compilation-link-execution development process of compiled languages. The first languages ​​were often called "command language" or "job control language" (JCL) because they simply allowed to automate a succession of simple commands, in the manner of a "script" of theater. Subsequently, they were provided with implicit (IBM 1130) or explicit (JCL) conditional executions, and finally with loop orders and operators transforming them into quasi-programming languages.
+
+
+## Realization of our first script
+As mentioned in the definition below a script is actually a file that will be read by the command interpreter, we had seen in the description of GNU / Linux that there are several command interpreter, by default the interpreter is bash. However there are others such as Zsh, tcsh, csh, ... I invite you to re-read this section if you want to refresh your memory however here we will focus on Bash. This chapter will not be a Bash programming training this will take a lot of time however i will make an introduction to understand how a script works.
+
+
+Let's start if you want to make a little script, what we will do is the classic "hello world". To begin, we will do it in the terminal, to do this we will use the command echo which displays a message, example ...
+
+### hello world in the terminal
+
+        username@hostname:~$ echo "hello world"
+        hello world
+
+
+Well it's good but what we want is to make a script, use your favorite editor and create the hello_world.sh file, personally I will use VIM but free to use another editor. Here is the content of the file:
+
+### hello_world.sh
+
+    echo "hello world"
+
+Now we run the script? Here's how to proceed
+
+### execution of hello_world.sh
+
+    username@hostname:~$ bash hello_world.sh
+    hello world
+    
+    
+We give the shell bash argument the hello_wolrd.sh script and here the script is executed. Of course we could put any command we use in the console inside the script, another example I add an archive of the / etc directory.
+
+      File archive_etc.sh
+
+### archive_etc.sh
+
+    echo " Archive of /etc in /tmp "
+    tar -zcvf /tmp/etc.tar.gz /etc
+
+
+same thing to run the script
+
+
+### execution script archive
+
+    username@hostname:~$ bash archive_etc.sh
+    
+    Archive of /etc in /tmp
+    tar: Removing leading '/' from member names
+    tar: /etc/NetworkManager/system-connections/maison: Cannot open: Permission denied
+    /etc/
+    /etc/gai.conf
+    /etc/profile
+    /etc/bash.bash_logout
+    /etc/pulse/
+    /etc/pulse/client.conf
+    /etc/NetworkManager/
+    /etc/NetworkManager/NetworkManager.conf
+    [[ .. CUT OUTPUT ... ]]
+    
+    
+In order not to be forced to name the interpreter, here bash, before calling the script we can define it in the file directly, here is the new version of the script hello_world.sh.
+
+### hello_world2.sh
+
+```bash
+#!/bin/bash
+#
+# Showing hello world
+echo "hello world"
+```
+
+The file in detail:
+* line 1: definition of the interpreter to use
+* line 2,3: Commant, lines starting with # are comments.
+* line 4: The bash statement that will be executed
+
+
+All commands usable in the terminal can be defined in the scripting file, all the commands that we have seen can be put in a file.
+
+
+To be able to execute the file it will be necessary to modify it for the bigre executable with the command chmod.
+
+### perm hello_world2.sh
+
+    #change of permission
+    username@hostname:~$ chmod u+x hello_world2.sh
+ 
+    #script execution
+    username@hostname:~$./hello_world2.sh
+    hello world
+    
+    
+But why the ./ will you tell me? if we tapped the command directly hello_world2.sh, we would have the message bash: hello_world.sh: command not found.
+
+
+When entering a command the bash shell looks in the list of directories defined in the variable $ PATH, the executable file with the name entered.
+
+
+you can display the value of the $ PATH variable with echo:
+
+
+### variable PATH
+
+    username@hostname:~$ echo $PATH
+    /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
+    username@hostname:~$ which ls
+    /bin/ls
+    
+    
+In the above example, when using the ls command, the system will look for the executable file ls in the / usr / local / sbin directory, then / usr / local / bin followed by / usr / sbin by the following / usr / bin and again / sbin and finally will execute the file in the / bin directory. In our example, the shell will not look in the / usr / games directory, because the executable was found before.
+
+
+Since the directory where we are located is not part of the listed directories we must provide the full path to access the file. so if I resume the execution of hello_world2.sh we can write it as follows:
+
+### exécution script bash
+
+    #script execution
+    username@hostname:~$./hello_world2.sh
+    hello world
+ 
+    #OR
+    username@hostname:~$/home/username/hello_world2.sh
+    hello world
+
+The two notation are equivalent, the "." (dot) represents the current directory, as a reminder the ".." represents the previous directory, when I use the annotation "./" this is equivalent to putting the current complete directory.
+
+
+It is also possible to modify the $ PATH variable as follows:
+
+### change PATH and execution
+
+    username@hostname:~$ export PATH=$PATH:/home/username/
+    username@hostname:~$ echo $PATH
+    /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/home/username/
+    username@hostname:~$ hello_world2.sh
+    hello world
+ 
+So in this case the shell will go through all the directories before running our script, which is really not a problem in terms of performance.
+
+
+## The variables
+We have already previewed variables with the variable $ PATH present just before, let's see the other variables available with the system, the env command can provide you with a list of available variables: 
+
+### environnement bash
+
+    username@hostname:~$ env
+
+```
+TERM=xterm
+SHELL=/bin/bash
+XDG_SESSION_COOKIE=6a603b66850cd8643667fdca0000000a-1394754492.491257-1773303034
+SSH_CLIENT=192.168.42.204 1420 22
+SSH_TTY=/dev/pts/7
+USER=username
+MAIL=/var/mail/username
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games
+LC_MESSAGES=fr_FR.UTF-8
+LC_COLLATE=fr_FR.UTF-8
+PWD=/home/username
+LANG=fr_CA.UTF-8
+SHLVL=1
+HOME=/home/username
+LANGUAGE=fr:en
+LOGNAME=username
+LC_CTYPE=fr_FR.UTF-8
+SSH_CONNECTION=192.168.42.204 1420 192.168.42.10 22
+_=/usr/bin/env
+```
+
+as you see the variable $ PATH is present, it is also possible to define our variables to do this just to give a name add the symbol = (be careful it must be pasted to the name of the variable) and assign the value. You will find that all variables are uppercase this is NOT mandatory but this is a convention. Here is an example of a variable assignment
+
+### assign variable
+
+    #assign value /tmp to DST_REP
+    username@hostname:~$ DST_REP=/tmp
+    username@hostname:~$ echo $DST_REP
+    /tmp
+    
+    
+To use the variable we use the symbol $ in front of the name of the variable. Let's take my archiving script:
+
+
+### Script archive with use of variable
+
+```bash
+#!/bin/bash
+#
+# Description: Archive a directory
+######################################
+ 
+# Variable
+DIR_2_ARCHIVE=/etc
+ 
+# MAIN
+echo " Archive of $DIR_2_ARCHIVE in /tmp "
+tar -zcf /tmp/archive.tar.gz $DIR_2_ARCHIVE
+ 
+echo " DONE "
+```
+
+
+We see the use of the variable DIR_2_ARCHIVE to display a message but also used in a command. The small problem is that this variable is a constant it can not change without someone editing the file. The ideal is to be able to pass in argument the name of the directory which one wishes to archive, fortunately when one calls a script of the variables are initialized with the information wanted, here is a table:
+
+
+| <b><u>Variable</u></b> | <b><u>Description</u></b> |
+| :---         | :---         | 
+| :small_orange_diamond: [$`*`] | contains all the arguments passed to the function |
+| :small_orange_diamond: [$`#`] | contains the number of arguments |
+| :small_orange_diamond: [$`?`] | contains the return code of the last operation |
+| :small_orange_diamond: [$0] | contains the name of the script |
+| :small_orange_diamond: [$1,$2,$3] | contains the first argument, the second, etc. | 
+
+
+
+In the light of this information we will resume the archiving script:
+
+### Archive with argument
+
+```bash
+#!/bin/bash
+#
+# Description : Archive of repertory
+######################################
+ 
+# Variable
+DIR_2_ARCHIVE=$1
+ 
+# MAIN
+echo " script $0 archive of $DIR_2_ARCHIVE in /tmp "
+tar -zcf /tmp/archive.tar.gz $DIR_2_ARCHIVE
+ 
+echo " DONE , command was $0 $* "
+```
+
+If we do a script test, we would call it as follows:
+
+### use archive
+
+    username@hostname:~$ ./archive /tmp 
+
+```tar: Removing leading '/' from member names
+tar: /tmp/pulse-PKdhtXMmr18n: Cannot open: Permission denied
+tar: /tmp/.X11-unix/X0: socket ignored
+tar: /tmp/cvcd: Cannot open: Permission denied
+tar: /tmp/keyring-uZh1m5/control: socket ignored
+tar: /tmp/OSL_PIPE_1000_SingleOfficeIPC_dfc3cd856fa49aeddf2b54d711f42fc: socket ignored
+tar: /tmp/.lxterminal-socket:0.0-xerus: socket ignored
+tar: /tmp/pulse-m5tkYEvRYHHt/native: socket ignored
+tar: /tmp/.vbox-xerus-ipc/ipcd: socket ignored
+tar: /tmp/e-xerus@0/:0.0-6454|0: socket ignored
+tar: /tmp/ssh-EtxCQxFm6415/agent.6415: socket ignored
+tar: /tmp/.winbindd/pipe: socket ignored
+tar: /tmp/archive.tar.gz: file changed as we read it
+tar: Exiting with failure status due to previous errors
+ DONE , commande été ./archivage.sh /tmp
+```
+
+As you can see there is some error here because of permission problem, I let you forward the error messages to another file thanks to the redirection of the stderr (2) channel.
+
+
+Another interesting element is that it is possible to assign the result of a command in a variable, for example we would like to write the date in the name of the archive file, example /tmp/archive-2022-03-13.tar.gz . The date command allows us to display the date of the day and with the +% F argument we have the display format that suits us here is the example:
+
+### use of date
+
+    username@hostname:~$ date +%F
+    2022-03-13
+
+
+in the script this gives: 
+
+### using a command to feed a variable
+
+```bash
+#!/bin/bash
+#
+# Description : Archive a directory
+######################################
+ 
+# Variable
+DIR_2_ARCHIVE=$1
+DATE=$(date +%F)
+# other possible notation DATE=`date +%F`
+ 
+# MAIN
+echo " script $0 archive of $DIR_2_ARCHIVE in /tmp "
+tar -zcf /tmp/archive-$DATE.tar.gz $DIR_2_ARCHIVE
+ 
+echo " DONE , command was $0 $* "
+```
+
+It is also possible to acquire information from the user's par when executing the script with the read command, if we reprenon the script above instead of defining $ DIR_2_ARCHIVE with an argument to the script I will acquire information during execution.
+
+### use of read
+
+```bash
+#!/bin/bash
+#
+# Description : Archive a directory
+######################################
+ 
+# Variable
+DIR_2_ARCHIVE=""
+DATE=$(date +%F)
+# other possible notation  DATE=`date +%F`
+ 
+echo -n " Enter the repertory name :  "
+read DIR_2_ARCHIVE
+ 
+# MAIN
+echo " script $0 archive of  $DIR_2_ARCHIVE in /tmp "
+tar -zcf /tmp/archive-$DATE.tar.gz $DIR_2_ARCHIVE
+ 
+echo " DONE , command was $0 $* "
+```
+
+In the above example I display the message to the client in line 11, I use the -n option to echo so that it does NOT carry a carriage return after displaying the message, the read command to line 12 will wait for a client operation and assign the value entered in the variable $ DIR_2_ARCHIVE
+
+
+# Control structures
+## Conditional Structure (FI)
+
+Following the order of things after the variables the control structures, but what is a control structure, what controls what? a control structure allows us to perform validation on a variable, it value if it is equal to something, bigger, smaller or corresponds to a state, etc.
+
+
+If I continue with my archiving script, of course here I realize a tar but it could just as well be a cp or any command. We have modified the script to allow the user to transmit the directory to be archived as an argument to the script. It's a good bet that this will cause a problem and that the user will transmit a bad argument and nothing will work. In order to correct the problem we are going to validate the argument, we are going to validate that $ DIR_2_ARCHIVE is a file, there exists the test command which makes it possible to make the validation here an example.
+
+### use of command test
+
+      username@hostname:~$ test -e /etc/
+      username@hostname:~$ echo $?
+      0
+      username@hostname:~$ test -e /etc/passwd
+      username@hostname:~$ echo $?
+      0
+      username@hostname:~$ test -e /etc/toto
+      username@hostname:~$ echo $?
+      1
+ 
+ 
+The test command does not return any information, however it assigns a value to the variable $? ALL commands save the value of returns to this variable, 0 == OK,> 0 == problem. This is also true for the cp command for example, demonstration:
+
+
+### variable $?
+
+```
+username@hostname:~$ cp /etc/passwd /tmp/
+username@hostname:~$ echo $?
+0
+username@hostname:~$ cp /etc/shadow /tmp/
+cp: cannot open '/etc/shadow' for reading: Permission denied
+username@hostname:~$ echo $?
+1
+```
+
+So we add the condition in the archive script
+
+
+### archive with condition
+
+```bash
+#!/bin/bash
+#
+# Description : Archive a directory
+######################################
+ 
+# Variable
+DIR_2_ARCHIVE=$1
+DATE=$(date +%F)
+# other possible notation  DATE=`date +%F`
+ 
+# MAIN
+# other notation
+# if [ -e $DIR_2_ARCHIVE ]
+if test -e $DIR_2_ARCHIVE
+then
+        echo " script $0 archive of $DIR_2_ARCHIVE in /tmp "
+        tar -zcf /tmp/archive-$DATE.tar.gz $DIR_2_ARCHIVE
+        echo " DONE , command was $0 $* "
+else
+        echo " $DIR_2_ARCHIVE dont exist !! "
+fi
+```
+
+If we look at line 14, we have the if condition Command, if the command returns $? = 0 then the script realizes lines 16,17 and 18.
+
+
+Otherwise line 19, the script realizes line 20 and the control structure finished with fi on line 21. I invite you to consult the man page of the test command, man test.
+
+
+It is important to understand that the IF command interprets the result of a command, so it is possible to put any command, here is an example with the command whoami and grep.
+
+
+### use of whoami and grep
+
+```
+username@hostname:~$ whoami
+username
+username@hostname:~$ whoami | grep root
+username@hostname:~$ echo $?
+1
+username@hostname:~$ whoami | grep username
+username
+username@hostname:~$ echo $?
+0
+```
+
+I'm going to modify the script to be forced to be the root user when running the script.
+
+### archive restriction user
+
+```bash
+#!/bin/bash
+#
+# Description : Archive a directory
+######################################
+ 
+# Variable
+DIR_2_ARCHIVE=$1
+DATE=$(date +%F)
+# other possible notation  DATE=`date +%F`
+ 
+# MAIN
+ 
+# User validation
+if whoami | grep root
+then
+# Validation of the argument
+        if test -e $DIR_2_ARCHIVE
+        then
+                echo " script $0 archive of $DIR_2_ARCHIVE in /tmp "
+                tar -zcf /tmp/archive-$DATE.tar.gz $DIR_2_ARCHIVE
+                echo " DONE , command was $0 $* "
+        else
+                echo " $DIR_2_ARCHIVE dont exist !! "
+        fi #  test -e $DIR_2_ARCHIVE
+else
+        echo "Need to be root to run the script"
+fi # whoami | grep root
+
+```
+
+
+Result at execution:
+
+### execution script archive
+
+```
+username@hostname:~$ ./archive.sh
+You have to be root to execute this script
+username@hostname:~$ ./archive.sh /tmp
+You have to be root to execute this script
+username@hostname:~$ sudo ./archive.sh /tmp/ 2>/dev/null
+root
+ le script ./archive.sh archive of /tmp/ in /tmp
+ DONE , command was ./archive.sh /tmp/
+``` 
+
+You will find that after each fi I identify the original command this makes debugging easier especially if you have multiple nested if.
+
+## Repetition Structure (FOR)
+
+The for control structure allows us to loop for a certain number of times, the for loop will go through a list and execute an instruction list for each element of the list here are two simple examples:
+
+### example simple for
+
+```bash
+#Example of a for loop with a pre-defined variable
+ 
+LST_VILLE="Paris Montreal Marseille Berlin Rennes Sydney"
+ 
+for ville in $LST_VILLE
+do
+        echo "ville : $ville"
+done # ville
+```
+
+### result example for 1
+
+```
+username@hostname:~$ bash exemple.sh 
+ville : Paris
+ville : Montreal
+ville : Marseille
+ville : Berlin
+ville : Rennes
+ville : Sydney
+```
+In the example above we see that we have a Variable $ LST_VILLE the for loop will go through the list of cities and take each element 1 by 1 and assign the element being processed in the variable $ city. Once the variable assigned for realizes the block between do and done, in this block it is possible to use the variable $ city. As you noted here I only display the name of the city.
+
+
+you will find that I did not set this variable in upper case, this is purely personal. The variables "temporary" processing in for I usually do not put them in capital letters.
+
+
+of course for is able to treat something other than pre-defined variables it can also interpret the result of an order, here is another example:
+
+### example for with command ls
+
+```bash
+#!/bin/bash
+#
+# List the /etc/*.conf files with a for
+ 
+for fic in $(ls /etc/*.conf)
+do
+            echo "fichier config : $fic"
+done #  fic in $(ls /etc/*.conf) 
+```
+
+### result command for with ls /etc/*.conf
+
+```
+[[ ... CUT OUTPUT  ... ]]
+fichier config : /etc/pnm2ppa.conf
+fichier config : /etc/popularity-contest.conf
+fichier config : /etc/request-key.conf
+fichier config : /etc/resolv.conf
+fichier config : /etc/rsyslog.conf
+fichier config : /etc/sensors3.conf
+fichier config : /etc/smi.conf
+fichier config : /etc/sword.conf
+fichier config : /etc/sysctl.conf
+fichier config : /etc/ts.conf
+fichier config : /etc/ucf.conf
+fichier config : /etc/updatedb.conf
+fichier config : /etc/usb_modeswitch.conf
+fichier config : /etc/wodim.conf
+fichier config : /etc/x3_formation.conf
+```
+
+In this case, the for command receives as a list the result of the ls /etc/*.conf command. Then the process is the same. Each entry is assigned 1 to 1 to the $ fic variable that can be used in the blocks between them. line 6 and 8.
+
+
+Good for the moment it is perhaps difficult to see the used so let's resume our backup / archiving script here is an example with the command for
+
+
+### archiving / backup script with for loop
+
+```bash
+#!/bin/bash
+#
+# Description : 
+# Realization of a backup / archiving of the directories list by the variable $ LST_REP_2_BK
+# each tar.gz file contains the name of the last directory and the date
+# the set is realized in the directory $ DST_REP
+#
+ 
+# Variables
+ 
+LST_REP_2_BK="/etc /var/backup /var/spool/mail"
+DST_REP="/tmp/Mybackup/"
+DATE=$(date +%F)
+ 
+ 
+# Main
+ 
+for rep2bk in $LST_REP_2_BK
+do
+ # Extraction to keep only the name /
+        rep2bk_prefix=$(basename $rep2bk)
+ 
+# tar of each directory with the meaningful name
+# and the date
+        tar -zcf $DST_REP/$rep2bk_prefix-$DATE.tar.gz $rep2bk
+ 
+done # rep2bk in $LST_REP_2_BK  
+```
+
+## Debug
+It can become difficult to debug a bash script ESPECIALLY if there is a lot of variable and they are reset during the script, fortunately it is possible to run the script in debug mode here is an example with the script defined above. 
+
+### mode debug script archive
+
+```
+username@hostname:~$ bash -x archive_for.sh 
++ LST_REP_2_BK='/etc /var/backup /var/spool/mail'
++ DST_REP=/tmp/Mybackup/
+++ date +%F
++ DATE=2022-03-17
++ for rep2bk in '$LST_REP_2_BK'
+++ basename /etc
++ rep2bk_prefix=etc
++ tar -zcf /tmp/Mybackup//etc-2022-03-17.tar.gz /etc
++ for rep2bk in '$LST_REP_2_BK'
+++ basename /var/backup
++ rep2bk_prefix=backup
++ tar -zcf /tmp/Mybackup//backup-2022-03-17.tar.gz /var/backup
++ for rep2bk in '$LST_REP_2_BK'
+++ basename /var/spool/mail
++ rep2bk_prefix=mail
++ tar -zcf /tmp/Mybackup//mail-20122-03-17.tar.gz /var/spool/mail
+```

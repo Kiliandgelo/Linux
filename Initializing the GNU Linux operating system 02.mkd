@@ -1,0 +1,424 @@
+# Operating system boot daemon
+* Description
+* General concept
+* runlevel
+* respawn
+* System V
+* Upstart
+
+## Description
+At this point the system is functional at least the base, the hardware is booted through the BIOS, the kernel (kernel) is loaded with all of these dependencies (initrd) and the root partition (/) is also accessible. The entire system is ready, however no service, with no configuration is achieved at this stage. By network, all partitions are not mounted so possibly not all data, we are far from talking about web service or other server installed.
+
+
+The init process therefore has the role to start all this and of course in the right order, because it is likely that the network service starts before the web service for example. We will see that at the end of the initialization all the resources and services of the machine will be available.
+
+
+As mentioned nowadays there are several SystemV, Upstart and systemD boot programs. We will see the first two.
+
+
+As mentioned the operating system is viable when the init script is loaded, it is possible to inform grub so that it passes in parameter to the kernel another path for the initialization of the operating system, we could for example indicate to start init = / bin / bash. Although this will work, you should manually start all services as init does. However this can be very convenient when initialization problem for debugging a problem. We'll see him later.
+
+## General concept
+Whether we are talking about System V or Upstart we have similar concepts, although the configuration files are not the same, the important thing is to understand the theory. The similarity between the two systems allowed the Ubuntu distribution to make the transition to Upstart without major impact and sometimes without being noticed. Although we do not cover systemd here the concept applies as well as the name is different.
+
+
+### runlevel
+As mentioned earlier the initialization process realizes the start of resources (network, partitioning, ...) or services (apache web server, ssh, ...). To be more accurate the init process provides a functional level, there are several feature level states that are "standard" under GNU / Linux. This level of functionality is named runlevel, there are several level of functionality here is the list:
+
+
+| <b><u>RunLevel</u></b> | <b><u>Ubuntu/Debian</u></b> | <b><u>CentOS/RedHat</u></b> |
+| :---         | :---         | :---         |
+| :small_orange_diamond: [0] | Stopping the machine, the power supply can then be cut safely| Stopping the machine, the power supply can then be cut safely | 
+| :small_orange_diamond: [1] | Single user mode, mainly used to diagnose a problem with the system | Single user mode, mainly used to diagnose a problem with the system | 
+| :small_orange_diamond: [2] | Default level, full multi-user functionality and all network services are enabled | Rarely used, multi-user however network services are not active (NFS, apache, ssh, ...) | 
+| :small_orange_diamond: [3] | Not used| Default level, multi-user and all network services are active, EXCEPT GUI that is only active at level 5 | 
+| :small_orange_diamond: [4] | Not used| Not used | 
+| :small_orange_diamond: [5] | Not used| Like level 3 so multi-user and all network services AND GUI | 
+| :small_orange_diamond: [5] | Restarting the server| Restarting the server | 
+
+As you can see some runlevel are identical from one distribution to the other (0,1,6) while other differs, to know the level of execution of your system you can use the command runlevel:
+
+#### Show runlevel
+
+      user@host:~$ runlevel 
+      N 2
+
+In this case the system is in runlevel 2, if you use a machine with Ubuntu it is very likely that you are also at runlevel 2.
+
+
+It is possible to change the runlevel when the system is running, for example if I am with a distribution type RedHat I am at runlevel 3, so without GUI I can very well change runlevel to switch to level 5. At this point, the init process will perform all startup and modification so that resources and services conform to this runlevel. Here is an example to change from level 2 to 5, of course for this operation to be root.
+
+#### runlevel change
+
+      user@host:~$ sudo init 5
+      
+Be careful not to do any bad handling !!! When you change this level to a direct repercussions on the system, there is no request for confirmation, so if you change the level for the 6 for example the system will reboot!
+T
+
+his is not critical you only have to wait for the boot to regain control ...
+
+
+The start of services and resources differs slightly between the two systems so we will see in detail this aspect soon.
+
+### respawn
+Another similarity between the two systems is the ability to define a service in respawn mode The advantage of this service is that even if it is killed or stopped for any reason, the system will automatically restart it. This has these advantages and disadvantages, because the system does not look at why it spit, if there is an error in the configuration file for example, so that the system can not properly boot the operating system will go on without success. Very few services are configured in this way, but we find some such a console login process, this very robust application allows us to ensure that it is always available even in case of handling error . It is convenient to be able to log on to the system to repair our error even if we would have killed all other processes. Another good example is udev which is guaranteed to be running.
+
+
+We will see that with the arrival of Upstart a system of limitation of respawn was put in place, something that did not exist with System V.
+
+
+## System V
+Although Ubuntu uses Upstart, the knowledge of System V is, I think, very important, because we still find it on several distributions such as CentOS. Although the latter dates back to several mid-80s, it does very well, so much so that upstart, which is very recent, is inspired by System V. As mentioned, it uses the runlevels described earlier, the configuration file is: / etc / inittab plus it uses the directories /etc/rc0.d, /etc/rc1.d, /etc/rc2.d, /etc/rc3.d, /etc/rc4.d , /etc/rc5.d, /etc/rc6.d, /etc/init.d/
+
+
+Here is an example of the configuration file:
+#### /etc/inittab
+
+    #Default runlevel. The runlevels used by RHS are:
+      #0 - halt (Do NOT set initdefault to this)
+      #1 - Single user mode
+      #2 - Multiuser, without NFS (The same as 3, if you do not have networking)
+      #3 - Full multiuser mode
+      #4 - unused
+      #5 - X11
+      #6 - reboot (Do NOT set initdefault to this)
+    id:3:initdefault:
+ 
+    #System initialization.
+    si::sysinit:/etc/rc.d/rc.sysinit
+ 
+    l0:0:wait:/etc/rc.d/rc 0
+    l1:1:wait:/etc/rc.d/rc 1
+    l2:2:wait:/etc/rc.d/rc 2
+    l3:3:wait:/etc/rc.d/rc 3
+    l4:4:wait:/etc/rc.d/rc 4
+    l5:5:wait:/etc/rc.d/rc 5
+    l6:6:wait:/etc/rc.d/rc 6
+ 
+    #Trap CTRL-ALT-DELETE
+    ca::ctrlaltdel:/sbin/shutdown -t3 -r now
+ 
+    #Run gettys in standard runlevels
+    1:2345:respawn:/sbin/mingetty tty1
+    2:2345:respawn:/sbin/mingetty tty2
+    3:2345:respawn:/sbin/mingetty tty3
+ 
+    #Run xdm in runlevel 5
+    x:5:respawn:/etc/X11/prefdm -nodaemon
+ 
+    #Ask root password even in single user mode
+    ~:S:wait:/sbin/sulogin 
+
+
+Each line is structured as follows 4 fields delimited by colon, they are of the form:
+Code: levels: action: process
+* "Code" is a unique identifier for each entry, either a number or a keyword composed of characters and / or numbers: we have already seen "id" for the entry corresponding to the level of execution by default, there are others.
+* "Levels" is a list of execution levels to which the entry will apply, if this list is empty, it is equivalent to indicating all levels.
+* "Action" specifies how the process indicated by the "process" field should be treated when entering one of the levels in the "levels" list. Possible actions are:
+  * wait: start the process and wait for it to finish before going to the next inittab entry
+  * respawn: start the process and restart it automatically when it finishes
+  * ounce: start the process if it is not already started, do not wait for it to finish
+  * initdefault: Specifies the default operating level
+  * sysinit: the process must be done at system startup, before any action entry
+
+
+Explanation of the configuration file:
+* line 9 : id:3:initdefault:
+        
+      This defines the runlevel by default when the system is initialized, in this case the runlevel is 3 so multi-user and all the services EXCEPT the GUI, if we wanted to change the initialization level we would only have to change the value 3.
+
+* line 12: si :: sysinit: /etc/rc.d/rc.sysinit
+    
+      Initialization script, the latter will be executed regardless of the runlevel defined, to really know what it does nothing like read the script, here is an example of this rc.sysinit file. Although the contents and the details can vary the goal is always the same initialize the system by loading modules of the nucleus, to activate points of assembly, to activate systems of security (SeLinux, crypto, ...)
+
+* line 14 to 20: l3: 3: wait: /etc/rc.d/rc 3
+
+      At this point we have a functional system with modules for USB support, important editing points are realized, active encryption modules, ... However no services or resources were started, in other if you wanted that the service we activate automatically at start this will realize that now. We are at the stage of starting the services according to the runlevel. In the example here, for level 3, the system will call the script /etc/rc.d/rc passing argument 3, you'll guess it's the runlevel number. Here is an example of the script: rc.
+
+
+The script will browse the directory /etc/rc3.d/ to find files that start with the letter S for Start, for each file found it will run the script with the start argument, here is an example of the contents of the directory:
+
+#### initialization script list rc3.d
+
+      user@host:~$ ls /etc/rc3.d/
+      
+      K01dnsmasq         K35winbind          S00microcode_ctl    S13portmap         S28autofs        S95anacron
+      K01KICKSTART       K50netconsole       S03sysstat          S14nfslock         S30nscd          S95atd
+      K02avahi-dnsconfd  K50snmptrapd        S03vmware-tools     S15mdmonitor       S50hplip         S95jexec
+      K02NetworkManager  K69rpcsvcgssd       S04readahead_early  S18rpcidmapd       S50snmpd         S97yum-updatesd
+      K02oddjobd         K73ipmi             S05kudzu            S19rpcgssd         S55sshd          S98avahi-daemon
+      K05conman          K73ypbind           S07iscsid           S22messagebus      S56rawdevices    S98graylog2-server
+      K05saslauthd       K74syslog-ng        S08ip6tables        S23setroubleshoot  S56xinetd        S98graylog2-web-interface
+      K05wdaemon         K80kdump            S08iptables         S25bluetooth       S58ntpd          S98puppet
+      K10cups            K85mdmpd            S08mcstrans         S25netfs           S64mysqld        S99firstboot
+      K10psacct          K87multipathd       S10network          S25pcscd           S65puppetmaster  S99local
+      K10tcsd            K88wpa_supplicant   S11auditd           S26acpid           S80sendmail      S99nagios
+      K15svnserve        K89dund             S12restorecond      S26haldaemon       S85gpm           S99smartd
+      K20nfs             K89netplugd         S12syslog           S26hidd            S85httpd
+      K24irda            K89pand             S13cpuspeed         S26lm_sensors      S85mongod
+      K25squid           K89rdisc            S13irqbalance       S26lvm2-monitor    S90crond
+      K35vncserver       K99readahead_later  S13iscsi            S27elasticsearch   S90xfs
+ 
+Files starting with S (start) will start while files starting with K (Kill) will be stopped when this level of execution is done, to remember it is possible to move from one level to another. In order to allow the proper start sequence of the services, for example that the network starts before the ssh server, a number follows the start flag. Here is an example for the init script of ssh: S55sshd.
+
+
+* line 23: ca :: ctrlaltdel: / sbin / shutdown -t3 -r now
+
+      Regardless of the execution level, if the CTRL + ALT + DEL keyboard sequence is the command: / sbin / shutdown -t3 -r now is done in other words the reboot system. Commanding this line will disable the feature.
+
+* line 26: 1: 2345: respawn: / sbin / mingetty tty1
+
+      Here is a case of respawn, if we are in the runlevel 2,3,4 or 5 the system will make sure that the application / sbin / mingetty is in function, even if we stop the process by killing the latter process will restart.
+
+* line 31: x: 5: respawn: / etc / X11 / prefdm -nodaemon
+      
+      this is very similar however this only applies for the runlevel 5
+
+
+Once all the lines are processed and all the services run the server is available, the process at line 12 and especially at line 17 will be the longest because that is where all the work is done.
+
+
+The rc.sysinit script is complicated, however the rc script is quite simple to read I invite you to read this can validate your comprehention, SSH init script also a good source of analysis
+
+
+Attention, if you change the runlevel by default, it must be appropriate, indeed if you change it to 6, the system reboots repeatedly. This will not facilitate the correction of the problem, you will have to define in the grub another runlevel in order to remodify the file inittab
+
+
+So in summary:
+1. The system is booting through the BIOS
+2. The BIOS loads the boot loader (GRUB)
+3. The user chooses his kernel and the initrd associated with it
+4. The initrd is loaded, the kernel modules are loaded and the root (/) is mounted
+5. Initialization is done by / sbin / init
+1. Reading the / etc / inittab file
+2. Running the initialization script /etc/rc.d/rc.sysinit
+3. Running Resource Startup and Service /etc/rc.d/rcRunlevel_Number
+4. Terminals activation: / sbin / mingetty tty1
+
+
+## Upstart
+As mentioned, System V is not used as an initialization system for Ubuntu, so let's start by explaining why there was a system change.
+
+
+Ubuntu has made the choice of Upstart because the latter is better suited for use on a personal computer, indeed System V has the disadvantage of being sequential, each service or resource is started one after the other, this increases the time system boot. With the use of Upstart it is possible to start services in background while providing the hand to the user who is looking forward to, for example start SSH is not essential if we are waiting to use the GUI. Upstart better handles removable devices such as USB keys wireless network card type, in the case of System V we would have to load the modules before activating the network, Upstart communicating more easily with udev the work is chewed.
+
+
+Suggestion of reading to deepen the subject:
+https://wiki.ubuntu.com/ReplacementInit
+http://www.markshuttleworth.com/archives/1316
+
+
+As mentioned when the kernel will be loaded, the kernel will execute the / sbin / init file, whatever the system used, we are talking about system V, upstart or system D. In the case of Ubuntu we can see that the file is owned by upstart package. Here is the operation to confirm it:
+
+#### View the owner of / sbin / init
+
+      #The dpkg -S command allows us to search (-S search) at which
+      #package the parcel file provides is a member.
+      user@host:/etc/init$ dpkg -S /sbin/init
+      upstart: /sbin/init
+ 
+ 
+The file at its execution will browse the directory / etc / init in this directory we find all the services and resources that will be loaded by upstart. If we display the contents of the directory here is the overview:
+
+#### list file /etc/init
+
+    user@host:/etc/init$ ls /etc/init
+    
+    acpid.conf                idmapd.conf                       nmbd.conf                     statd-mounting.conf
+    alsa-restore.conf         irqbalance.conf                   passwd.conf                   statd.conf
+    alsa-store.conf           lightdm.conf                      plymouth-log.conf             tty1.conf
+    atd.conf                  lxdm.conf                         plymouth-ready.conf           tty2.conf
+    avahi-daemon.conf         modemmanager.conf                 plymouth-splash.conf          tty3.conf
+    binfmt-support.conf       module-init-tools.conf            plymouth-stop.conf            tty4.conf
+    console-setup.conf        mountall-net.conf                 plymouth-upstart-bridge.conf  tty5.conf
+    console.conf              mountall-reboot.conf              plymouth.conf                 tty6.conf
+    container-detect.conf     mountall-shell.conf               portmap-wait.conf             ubiquity.conf
+    control-alt-delete.conf   mountall.conf                     portmap.conf                  udev-fallback-graphics.conf
+    cron.conf                 mounted-debugfs.conf              procps.conf                   udev-finish.conf
+    cryptdisks-enable.conf    mounted-dev.conf                  rc-sysinit.conf               udev.conf
+    cryptdisks-udev.conf      mounted-proc.conf                 rc.conf                       udevmonitor.conf
+    dbus.conf                 mounted-run.conf                  rcS.conf                      udevtrigger.conf
+    dmesg.conf                mounted-tmp.conf                  resolvconf.conf               ufw.conf
+    failsafe.conf             mounted-var.conf                  rpcbind-boot.conf             upstart-socket-bridge.conf
+    flush-early-job-log.conf  mysql.conf                        rsyslog.conf                  upstart-udev-bridge.conf
+    friendly-recovery.conf    network-interface-container.conf  screen-cleanup.conf           ureadahead-other.conf
+    gssd.conf                 network-interface-security.conf   setvtrgb.conf                 ureadahead.conf
+    hostname.conf             network-interface.conf            shutdown.conf                 wait-for-state.conf
+    hwclock-save.conf         network-manager.conf              smbd.conf
+    hwclock.conf              networking.conf                   ssh.conf
+ 
+ 
+As you can see contrary to what we have seen with the System V, the files not number to order the sequence of execution of the scripts, the set of files are at the same level. Of course a sequence exists, it is not possible to start the services in any order! Let's look at the ssh service, an essential service to enable us to administer the machine. Here is the content of the file / etc / init / ssh:
+
+
+#### file /etc/init/ssh
+
+    #ssh - OpenBSD Secure Shell server
+    #The OpenSSH server provides secure shell access to the system.
+ 
+    description     "OpenSSH server"
+ 
+    start on filesystem or runlevel [2345]
+    stop on runlevel [!2345]
+ 
+    respawn
+    respawn limit 10 5
+    umask 022
+ 
+    #'sshd -D' leaks stderr and confuses things in conjunction with 'console log'
+    console none
+ 
+    pre-start script
+        test -x /usr/sbin/sshd || { stop; exit 0; }
+        test -e /etc/ssh/sshd_not_to_be_run && { stop; exit 0; }
+        test -c /dev/null || { stop; exit 0; }
+ 
+        mkdir -p -m0755 /var/run/sshd
+    end script
+ 
+    #if you used to set SSHD_OPTS in /etc/default/ssh, you can change the
+    #'exec' line here instead
+    exec /usr/sbin/sshd -D
+ 
+* line 7 and 8: We have the definition of the criteria for starting and stopping the service
+
+
+      start on filesystem or runlevel [2345]
+      stop on runlevel [! 2345]
+
+
+The service starts if filesystem is set or if the runlevel is 2,3,4 or 5
+
+* line 17 to 23: We have a validation (pre-start) script, before attempting to start the service, the latter performs validation on the presence of file
+* line 27: starting the service
+
+       exec / usr / sbin / sshd -D
+
+The SLR if we take again the concepts already seen could be to visualize the file / etc / inittab, however you risk being disappointed because it no longer exists under Ubuntu. Let's put aside this question of runlevel to focus on the other conditions after all this is one or so we will start with the first condition.
+
+
+Upstart services or resources can carry information that can be used as a criterion for service start, so in the ssh framework it will not start until filesystem is issued. The term used by upstart is emitted. We will perform a search with the desired term in the directory and display the file:
+
+
+#### earch and display the filesystem transmitter
+
+      #Search for the file that issues filesystem
+      user@host:/etc/init$  grep "^emits filesystem" *
+      mountall.conf:emits filesystem
+ 
+ 
+We see that this is the file /etc/init/mountall.conf, let's see the content:
+
+
+#### content /etc/init/mountall.conf
+
+    #mountall - Mount filesystems on boot
+    #This helper mounts filesystems in the correct order as the devices
+    #and mountpoints become available.
+ 
+    description     "Mount filesystems on boot"
+ 
+    start on startup
+    stop on starting rcS
+ 
+    expect daemon
+    task
+ 
+    emits virtual-filesystems
+    emits local-filesystems
+    emits remote-filesystems
+    emits all-swaps
+    emits filesystem
+    emits mounting
+    emits mounted
+ 
+    #temporary, until we have progress indication
+    #and output capture (next week :p)
+    console output
+ 
+    script
+        . /etc/default/rcS
+        [ -f /forcefsck ] && force_fsck="--force-fsck"
+        [ "$FSCKFIX" = "yes" ] && fsck_fix="--fsck-fix"
+ 
+         # set $LANG so that messages appearing in plymouth are translated
+         if [ -r /etc/default/locale ]; then
+            . /etc/default/locale
+            export LANG LANGUAGE LC_MESSAGES LC_ALL
+         fi
+ 
+         exec mountall --daemon $force_fsck $fsck_fix
+    end script
+ 
+    post-stop script
+       rm -f /forcefsck 2>dev/null || true
+    end script
+ 
+ 
+Without going into details let's look at some lines:
+* line 8, 9: We find the start-up criterion, let's focus our attention on the first line so start we find that the service will start at startup
+
+      start on startup
+      stop on starting rcS
+
+* line 14 to 20: We see the listing of events emitted, I would like to highlight line 18 which contains the filesystem event required by ssh
+
+      emits virtual-filesystems
+      emits local-filesystems
+      emits remote-filesystems
+      emits all-swaps
+      emits filesystem
+      emits mounting
+      emits mounted
+      
+      
+So to get back to our ssh service, it can not be started until after the mountall service is executed, we are lucky in this case mountall does not depend on any other resource. The start criteria can be multiple, we saw the OR with ssh but it is also possible to have an ET to answer several criteria. All as for System V we will not see all the configurations but an overview, I leave you the pleasure to read other configuration file and see the criteria for starting.
+
+
+And the other criterion in all that ???
+
+
+Indeed do not forget the criterion based on the RunLevel, to allow the transition between System V and Upstart it was set up a resource to allow the transition, you will find this resource under the file / etc / init / rc-sysinit. conf, the latter will make it possible to define a Runlevel compliant with the System V and thereby issue the runlevel event. I will let you read the detail of the file however here is some interesting point:
+
+
+#### start rc-sysinit.conf file
+
+    #rc-sysinit - System V initialisation compatibility
+    #This task runs the old System V-style system initialisation scripts,
+    #and enters the default runlevel when finished.
+ 
+    description     "System V initialisation compatibility"
+    author          "Scott James Remnant <scott@netsplit.com>"
+ 
+    start on (filesystem and static-network-up) or failsafe-boot
+    stop on runlevel
+ 
+    #Default runlevel, this may be overriden on the kernel command-line
+    #or by faking an old /etc/inittab entry
+    env DEFAULT_RUNLEVEL=2
+ 
+    emits runlevel
+ 
+    [[ CUT OUTPUT  ]]
+    
+    
+If we analyze this file a bit we have
+* line 9: The definition of the execution rules, just as we saw for SSH, the filesystem event, must be present during the analysis we found that this was emitted by the resource mountall.conf. In addition, the static-network-up event must also be emitted beforehand.
+
+      start on (filesystem and static-network-up) or failsafe-boot
+
+* line 14: We find the equivalent of the "id: 3: initdefault:" of System V which defines the runlevel by default at startup
+
+      env DEFAULT_RUNLEVEL = 2
+* line 16: The runlevel event is emitted so if other resources need this service, the start criteria will be ensured
+
+      emits runlevel
+
+So in summary:
+1. The system is booting through the BIOS
+2. The BIOS loads the boot loader (GRUB)
+3. The user chooses his kernel and the initrd associated with it
+4. The initrd is loaded, the kernel modules are loaded and the root (/) is mounted
+5. Initialization is done by / sbin / init
+1. Reading the /etc/init/*.conf file
+2. Execute scripts in the required sequence according to the events.

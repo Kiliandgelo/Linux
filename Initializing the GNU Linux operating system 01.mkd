@@ -1,0 +1,168 @@
+# Initializing the GNU / Linux operating system
+
+## Initialization process
+* Description
+* System Setup (BIOS)
+* Bootloader
+* The kernel and the initrd
+* INIT process
+
+## Description
+In this lesson we will see the initialization of the GNU / Linux operating system, we will start with the bios initialization system until the operating system login. Of course we will not be able to see all of it in detail, but the goal is to get an idea of the process. We will not see the details of the configuration files at this point, nor how to diagnose a problem during these steps, but after this lesson you will be able to identify the steps that make the system available.
+
+## System Setup (BIOS)
+Without going into details to start there is the bios (Basic Input Output System)
+
+
+The BIOS has a vital role for the operation of the motherboard:
+* it initializes all the components of the motherboard, the chipset and some peripherals;
+* it identifies all internal and external devices connected to it;
+* if it has not already been done, it initializes the order of priority of the input devices;
+* it starts the operating system on the first available device.
+
+
+The Power-on Self-Test (POST) is the first step in this more general process called booting.
+
+
+In this step, the BIOS tests the presence of various devices and attempts to allocate the necessary resources for conflict-free operation. After the POST completes, the control is transferred to the boot loader, whose role is to boot the operating system.
+
+
+## Boot loader
+Once the BIOS POST finished the latter loads the hard disk, especially the first sectors of the disk call the MBR (Master Boot Record). Its size is 512 bytes. The MBR contains the partition table (the four primary partitions) of the hard disk. It also contains a boot routine whose purpose is to load the operating system, or the boot loader if present, present on the active partition.
+
+
+In the 512 octets there is a small program that allows to load the operating system, under Linux, we use a bootloader, currently the most popular is GRUB, there is also other software such as lilo, etc.
+
+
+GRUB is too large to fit in 512 bytes and is divided into 3 steps:
+
+
+As we can see in the representation above:
+* Stage 1: boot.img is the boot loader initialization software that starts the boot process, the latter will load the information from step 1.5
+* Stage 1.5: core.img This section includes "drivers" in order to read the partition containing the rest of the software, indeed the partition / boot can be ext3, ext4, btrf, ... The system needs to load the driver appropriate in order to be able to read the internship 2
+* Stage 2: / boot / grub contains all the boot software you can read when the operating system is loaded. It is a software so it is possible to have several functionality, the majority of the time this software allows only to choose a kernel and start the boot of the latter.
+
+
+Here is the contents of the / boot / grub directory:
+### Content / boot / grub
+
+      user@hostname:~$ ls -l /boot/grub/
+      total 2216
+      drwxrwxr-x 2 root root    4096 Nov 27 11:25 fonts
+      -rw-r--r-- 1 root root     699 Oct 16 15:03 gfxblacklist.txt
+      -r--r--r-- 1 root root   12223 Feb 27 08:12 grub.cfg
+      -rw-rw-r-- 1 root root    1024 Mar 24 12:38 grubenv
+      drwxrwxr-x 2 root root   12288 Nov 27 11:50 i386-pc
+      drwxrwxr-x 2 root root    4096 Nov 27 11:25 locale
+      -rw-r--r-- 1 root root 2226340 Nov 27 11:50 unicode.pf2
+ 
+ 
+We find the files:
+* grub.cfg: grub configuration file
+* i386-pc: this directory contains the files of the grub software, if you list the contents of the directory you will see that there is a large number of files because grub was developed in a modular way.
+* fonts: fonts
+* locale: list of character strings specific to a language, such as French, German, etc.
+
+We will see in another lesson how to configure grub or make changes in the configuration. Once the software loaded into memory in step 2 grub reads the /boot/grub/grub.cfg configuration file this configuration file lists the kernels available which are all in the / boot directory. The grub system always has a default kernel that it will select to boot. When the kernel is loaded by grub it passes arguments to it such as the partition containing the root (/) of the operating system.
+
+## The kernel and the initrd
+As a reminder The kernel is the heart of the system, it is he who provides software to an interface to use the hardware. During the initialization the is composed of 2 file the kernel which contains the instructions proper and there is the file initrd which is associated with its kernel. The file initrd (Initial Ramdisk) contains a mini operating system, the latter allows to load modules that the kernel needs, it also allows to perform initializations required for the kernel.
+
+
+Here's an example of using the initrd: You have to buy a RAID controller for your Ultra-Performance server that is supported by Linux. The problem is that the source code is not free, however it provides the module, the module will be present in the initrd file so that the kernel can load properly and fetch all the information of the operating system.
+
+
+Although the use of inirtd is not mandatory, all modern distributions use the system so that it is available in the event that this becomes mandatory, thereby offering greater flexibility.
+
+
+The initrd file is associated with a kernel it is NOT possible to take this file and associate it with another kernel, because the modules / drivers that compose this file can only be used by the kernel for which they were created . There is a command to create a new initrd file when setting up a kernel. This is automatic when updating via the package system.
+
+
+So recap:
+1. The system is booting through the BIOS
+2. The BIOS loads the boot loader (GRUB)
+3. The user chooses his kernel and the initrd associated with it
+
+
+step 4! The boot loader (GRUB) loads the initrd file in memory and installs the mini operating system in RW, once it runs it executes the file / init (file contained in the system initrd) the file / init is a script that carries out several such as loading the kernel module / drivers, ... Once the script is finalized, the system remounts the real root partition (/) over the mini initrd system in order to boot the GNU / Linux operating system. The last initrd init script statement is to execute the initialization of the final operating system by running the / sbin / init script on the root partition (/) of the Linux OS.
+
+
+For the curious, here is how to extract the initrd file and see in detail the initialization process
+
+### Visualization of the initrd
+
+    user@hostname:~/demo_init$ # Copy of the file
+    user@hostname:~/demo_init$ cp /boot/initrd.img-3.11.0-14-generic .
+
+    user@hostname:~/demo_init$ # viewing the file type
+    user@hostname:~/demo_init$ file initrd.img-3.11.0-14-generic
+      initrd.img-3.11.0-14-generic: gzip compressed data, from Unix, last modified: Thu Dec 19 12:38:30 2013
+    
+    user@hostname:~/demo_init$ # extraction
+    user@hostname:~/demo_init$ mv initrd.img-3.11.0-14-generic initrd.img-3.11.0-14-generic.gz
+    user@hostname:~/demo_init$ gunzip initrd.img-3.11.0-14-generic.gz
+    user@hostname:~/demo_init$ file initrd.img-3.11.0-14-generic
+      initrd.img-3.11.0-14-generic: ASCII cpio archive (SVR4 with no CRC)
+    
+    user@hostname:~/demo_init$ ls
+      initrd.img-3.11.0-14-generic
+    
+    user@hostname:~/demo_init$ 
+    user@hostname:~/demo_init$ cpio -idmv < initrd.img-3.11.0-14-generic
+    [[ CUT OUTPUT ]]
+    usr/lib/i386-linux-gnu/libXext.so.6
+    usr/lib/i386-linux-gnu/libdatrie.so.1
+    usr/lib/i386-linux-gnu/libgraphite2.so.3
+    usr/share
+    usr/share/fonts
+    usr/share/fonts/truetype
+    usr/share/fonts/truetype/ttf-dejavu
+    usr/share/fonts/truetype/ttf-dejavu/DejaVuSans.ttf
+    108565 blocks
+    
+    user@hostname:~/demo_init$ ls --color
+      bin  conf  etc  init  initrd.img-3.11.0-14-generic  lib  run  sbin  scripts  usr
+   
+    user@hostname:~/demo_init$ # Visualization of the initialization script
+    user@hostname:~/demo_init$ vim -R init
+
+## INIT process
+
+
+So recap:
+1. The system is booting through the BIOS
+2. The BIOS loads the boot loader (GRUB)
+3. The user chooses his kernel and the initrd associated with it
+4. The initrd is loaded, the kernel modules are loaded and the root (/) is mounted
+
+
+step 5, the first process is launched / sbin / init, init (abbreviation of initialization) is the program under Unix which launches all the other tasks. It runs as a daemon and typically has a process ID (PID) of 1. This will make the whole system operational. This process is always present on the system, it will only be stopped when stopping the machine. Using the ps command, you can see this process:
+### show the init
+
+      user@host:~$ ps aux | head -3
+      USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND
+      root         1  0.0  0.0   3884  2036 ?        Ss   Mar03   0:00 /sbin/init
+      root         2  0.0  0.0      0     0 ?        S    Mar03   0:00 [kthreadd]
+As you may have guessed ALL the other program stems from this program, we can see it with the pstree command:
+
+### pstree command
+
+      user@host:~$ pstree | head -7
+
+      init-+-NetworkManager-+-dhclient
+          |                |-dnsmasq
+          |                `-2*[{NetworkManager}]
+          |-acpid
+          |-apache2---5*[apache2]
+          |-atd
+          |    -avahi-daemon---avahi-daemon
+The declaration of the file / sbin / init is programmed hard in the kernel however it is possible to pass in argument to grub another name of file, grub this load afterwards to inform the kernel not to use the name of file by default, we will see it later when debugging.
+
+
+There are several software that performs this process init, here are the 3 available under GNU / Linux:
+* System V: Most widely used, the latter is particularly used for RedHat, CentOS, Debian distribution
+* Upstart: Currently the latter is used by Ubuntu since version 8.04, the advantage is that the latter is similar and well coexist with System V.
+* Systemd: The latter is all recent, however it is expected that it will be the standard in some years, Debian will change from System V to systemd and Ubuntu will follow. Arch Linux already uses this system.
+
+Of course each one has its particularity, we will see in the next chapter System V and Upstart, but no matter the system the important thing is that this system starts all the processes and service of the system.
+

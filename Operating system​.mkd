@@ -1,0 +1,57 @@
+# What is an operating system?
+An operating system performs two very distinct tasks:
+* Present a virtual machine to the user.
+* Manage computer resources.
+
+## Virtual machine
+Being a virtual machine means transforming a set of electronic circuits into a modern tool that offers a simple abstraction of input / output, memory usage, file management, error protection and control, interaction between programs and their control.
+
+
+In two words: to prevent the programmer from having to know the electronic details of this or that microprocessor and allow the user to save his files without worrying about the type of disk used to store the information.
+
+## Resource Manager
+The other function of the operating system is the sharing of resources. The operating system plays a policeman role to avoid conflicts of use of memory, input / output devices, network interfaces, ... One can easily imagine what would happen if three programs tried to print at the same time without priorities being established.
+
+
+In addition, when the computer is used by several users, the sharing of memory and especially its protection remain a top priority. At any time, a good operating system knows the user of a resource, its access rights and its priority level.
+
+
+## Architecture of a computer system
+All computer systems are segmented into "layers" to allow better control of the entire computer. Figure 1 illustrates the different layers of such a system.
+
+## Equipment
+At the lowest level, we find the first layer that contains the physical components of integrated circuits, wires, power sources, ...
+
+
+The next layer consists of primitive software tools that directly control the underlying physical components, such as the internal registers of the processor and the arithmetic and logical unit. This layer is called the microcode and often resides in the processor of the computer.
+
+
+The other layer is that of the machine language that is interpreted by the microcode. This low-level language groups together 50 to 300 instructions for moving bits, calculating or comparing values using the internal registers of the processor.
+
+## Operating system
+The operating system just above gives programmers and users a set of functions such as "read file" or "display on screen." This is a high level of abstraction that avoids the programmer having to write, for example, code to move the read heads of a hard disk. This is the level of execution of device drivers (interrupt controllers, disks, graphics cards, ...).
+
+
+At the top of the hierarchy is the layer where we find the command interpreters, the compilers and the application software. It is clear that these programs are not part of the operating system, although they are delivered with it in many cases.
+
+
+## Application software
+Finally, above all these layers are the application software that allows a user to perform particular tasks without having to account for lower layers.
+
+
+## Functions of an operating system
+Today, IT, both in business and education, uses smaller machines that run on universal operating systems. Among these operating systems, two are particularly distinguished, a single-user system, Windows, and another multi-user and multi-tasking, Unix. In a questionable way, we can say that the first system is for individual computers, while the other is reserved for group work.
+
+
+Among the many operating systems, Unix / Linux is the one that offers the most wealth, the most homogeneity and the most flexibility. For this reason, in this book, Linux was chosen as the operating system to illustrate the theoretical concepts. In addition, the MS-DOS system then Windows, evolving, have incorporated many features of Unix / Linux.
+
+
+The functions of conventional operating systems can be divided into four main parts:
+1. Process management (programs).
+2. Memory management.
+3. The file system.
+4. I / O management.
+
+
+Modern operating systems also incorporate other features. These last ones concern in particular two major evolutions of the computer systems. The first is the interconnection of different machines and systems by local or wide area networks. The second is the disappearance of text screens and their replacement by multiple window devices with graphic properties.
+

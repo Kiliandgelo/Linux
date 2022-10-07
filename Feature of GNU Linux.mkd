@@ -1,0 +1,260 @@
+# Feature of GNU / Linux
+## Description of GNU / Linux
+As mentioned in the Unix and Linux section, GNU / Linux is an operating system close to the Unix system, GNU / Linux has the advantage of being available on a large number of architectures; that we talk about Intel / AMD, Sparc, PowerPC, Alpha, ARM, as well as processors dedicated to embedded and many other ...
+
+
+Linux is the operating system kernel that makes the interaction between hardware and software. The GNU part is the set of software that allows the user to use the system. The GNU / Linux pair forms the operating system. Around them there are many programs.
+
+
+GNU / Linux is:
+* multi-platform
+* multi-user
+* multi-task
+* multi-processor
+
+The operating system is network oriented. The origin of Unix and therefore of GNU / Linux comes from the world of MainFrames. At that time, the operating system was on a central computer and users were connecting to it with terminals. This logic was maintained although all communications are now local on a single machine; this offers great flexibility.
+
+
+The GNU / Linux system has the advantage of being "scalable". In other words, it can be executed on a system with few resources as well as on a powerful machine. Of course, if we run GNU / Linux on a Pentium 100Mhrz, do not expect to play the latest games out. However, it will be possible to use the system within the limits of its resources. The Linux kernel is very modular. This offers the possibility to reduce the memory borrowing and the features it uses.
+
+
+The security of GNU / Linux is renowned; it's not just because it's GNU / Linux and programmers are better than others ... The system architecture helps with security, but that's not the main reason. If we look at the security bugs and vulnerabilities that are published, there are as many as other systems. The peculiarity is that the source code is available, by the fact a large number of people re-read the code and shell; if a problem is found, it is reported. This offers a huge mass of people who realize "code review" and even sometimes propose the fix.
+
+
+GNU / Linux uses process segmentation by user. This increases the security of the system; each user can only access the data to which he is entitled.
+
+## Users
+Each user is identified by a username (login) and a password (password).
+
+
+The login is associated with a unique number (the UID: User IDentifier) ​​and identifies each user. It does not contain spaces or special characters.
+
+
+The password must be chosen wisely: it must include lowercase and uppercase characters, numbers and special characters.
+
+
+Each user has a working directory (the Home Directory) in which he has the right to create his own files and directories. This working directory is usually located in the / home directory and is named after the login. Example: the working directory of the user alex is / home / alex.
+
+
+There is one particular user: the root. The root is the administrator of the system, he has all the rights and deals with the management of the system: adding and removing users, installation and configuration of the system and software ...
+
+
+The root has all the powers on the system, it can do everything, including breaking everything. Therefore, you must choose a very secure password, and always double check before performing an operation with the root user.
+
+
+The root is not a user, strictly speaking, it is a function. Thus, you should never work permanently with the root account, but use your usual account, and pass root (via su or sudo commands) only if you need to perform an administration operation.
+
+
+Unlike other users, the root working directory is at the root of the system (/ root). The explanation is simple: if there is a problem with the / home partition, the root user can still access his working directory.
+
+## Interfaces
+
+### The command line
+By filiation with UNIX, the command line (or Unix shell) is always available in Linux, regardless of the distribution.
+
+
+Some distributions, especially those specialized in servers or certain administration tasks, use only the command line, especially for its low consumption of resources, due to the absence of graphic interface, but especially for its power of action , related to the interoperability of commands and the ability to generate scripts.
+
+
+For a long time, many configuration operations required its use, which is no longer true with recent distributions dedicated to family use. Nevertheless, online helpers often mention the command-line approach, even when a graphical configuration is possible: this method is more universal in the Linux world, and often easier to explain for the person helping, and his interlocutor only has to copy-paste the indication.
+ 
+ 
+# X Window Managers
+The use of the generic term Linux is misleading when it comes to using a personal computer. Indeed, there are several interfaces (or window manager) with different characteristics, like KDE, GNOME or Xfce.
+
+
+However, as all these interfaces are based on X Window, their applications can cohabit and they offer common features, including viewing windows remotely (including via compressed and encrypted protocols like ssh and nox) and copy and paste Simplified: a text selected by the mouse is automatically copied, a middle click (or a click, or both buttons at the same time) is enough to paste the text to the desired location. So there is never need for the keyboard to copy and paste under X.Two office environments have recently reached a certain maturity; let's mention the year 2003 for KDE44, a little later for GNOME. These two projects are very active, but they intend to improve significantly for their next major releases; efforts in this direction are concentrated in Appeal projects for KDE, and ToPaZ45 for GNOME.
+
+
+Technically, they are both based on many common technologies, first and foremost the X11 windowing system. To avoid duplicating
+
+
+certain efforts, an informal area of collaboration between these projects by the name of 
+
+
+Freedesktop.org has been set up.
+
+
+We can also note the rise of a third desktop environment called Xfce, which aims to provide a complete environment based on GTK + like GNOME, while remaining lighter than the latter or KDE.
+ 
+ 
+## Structure of the file system
+Compare the storage of directories and files on your computer to a tree: starting from the root of a tree, moving your finger all along the tree, following the trunk and branches, you can touch anything what leaf of this tree.
+
+
+In GNU / Linux systems, all the information stored in your storage media (hard disks, USB stick, SD cards, CD-ROMs, etc.) is necessarily accessible by following a path from a logical location called the root (denoted by a slash 1)). The root is a partition that you define as the basis for storing your files. Then, this database separates logically into directories (like branches of a tree), themselves separated into subdirectories and sub-subdirectories, and so on, in which your files are saved (the leaves of the tree). 'tree).
+ 
+ 
+The set of partitions will be grafted in tree (the term dedicated is "mount"). Unlike other operating systems that name each partition with a letter, under Unix and GNU / Linux the file system structure is always the same. Software or a file installed in a directory, for example "/ usr / bin / Your_Software", will always be accessible by the same path, whether it is installed on the first partition or the third one. It could even be on another hard drive. Here is a graphic representation of what I said:
+ 
+ 
+## Incorporation of mobile media
+Removable media "mount" in directories under / media. When inserting a media, a directory with a variable name (often derived from the model name) is created automatically and the content of the media is mounted on it. This directory may take a few seconds to appear, you must repeatedly display the contents of the directory until it appears.
+
+
+When I talk about removable media, this includes CD-ROMs, USB key, etc. If we resume the graphical representation after the insertion of a CD, we will have the following result
+ 
+ 
+Today the system automatically "mounts" the devices when they are detected, regardless of the type, if it can interpret it, the system will give you access. Linux is able to read a large number of partitions, at least in Reading. Sometimes the writing is considered "experimental", but remains available. This is the case for Mac partitions.
+
+
+Once finished, before removing the bracket, disassemble it. Attention, it is essential. If you forget to do this, your file system may be damaged because the operating system may still be writing to it. If the CD refuses to come out when you press the button, you have not dismounted it.
+
+
+With the file manager of the config conscript, you have to go to the directory / media (go to the root in the tree of the left panel) choose the right directory, right click on it, and choose "unmount" in the menu .
+
+
+If the operating system refuses to unmount the media, you must confirm that no program has an open file on the device or that your shell is not the directory of the device. Indeed the system refuses to dismantle the support if it is being accessed.
+
+
+We will see later what is behind this automation. We will manually mount and dismount the device.
+
+## Description of the directories
+One of the first difficulties for beginners Unix is to find your way around the tree. Unlike a Windows environment that groups all the resources needed for a program in the same directory, the resources in a unix system (and to a lesser extent MacOS) are distributed in a general hierarchy. Thus, if the executable code of a program is in the / bin directory, its libraries will be in the / lib directory and its configuration files in the / etc directory.
+
+
+The hierarchy of unix systems is standardized. The specification is available at http://www.pathname.com/fhs/
+
+
+* /
+
+      the root, it contains the main directories
+
+  * /bin
+
+        contains system-essential executables used by all users (for example, ls, rm, cp, chmod, mount, ...)
+       these are the basic commands of the system
+
+  * /boot
+
+        contains the files that allow Linux to boot, the kernel
+
+  * /dev
+    
+        contains device entry points
+         all devices are virtually all identified by a file; the network card is not identified under this directory, it is directly managed by the kernel
+
+  * /etc
+      
+        contains the commands and files necessary for the system administrator (files passwd, group, inittab, ld.so.conf, lilo.conf, ...),
+        the configuration files as well as the files to initialize the services (network, web server, ssh, ...)
+
+  * /home
+      
+        personal directory of users
+
+  * /lib
+
+         contains shared libraries essential to the system during startup; the equivalent of DLLs.
+
+  * /media
+
+        contains removable device mount points (cd-rom, floppy disk, usb key ...)
+
+  * /opt
+    
+         contains additional application packages
+
+  * /root
+      
+         root administrator directory
+
+  * /sbin
+
+         contains the essential system binaries, mainly for the use of the administrator (root) (for example the adduser command)
+
+  * /tmp
+
+        contains temporary files
+
+  * /usr
+
+         Secondary hierarchy
+         (usr as unix system resources)
+
+    * /usr/bin
+
+          contains the majority of binaries and user commands
+
+    * /usr/include
+
+           contains header files for C and C ++ programs
+
+    * /usr/lib
+
+           contains most shared libraries in the system
+
+    * /usr/local
+
+           contains data about programs installed on the local machine by root
+
+      * /usr/local/bin
+    
+             binaries of local programs
+
+      * /usr/local/include
+
+            local C and C ++ header files
+
+      * /usr/local/lib
+      
+            Local Shared Libraries
+
+      * /usr/local/sbin
+
+            local system binaries
+
+      * /usr/local/share
+
+            independent hierarchy
+
+     * /usr/sbin
+
+            contains system-critical binaries reserved for the system administrator
+
+      * /usr/share
+
+             reserved for non-architecture dependent data
+
+      * /usr/src
+
+            contains source code files
+
+  * /var
+
+        contains variable data
+
+
+## Exchange Partition (Swap)
+The swap space, usually called swap space or simply swap, is an area of a hard disk that is part of the virtual memory1) of your computer. It is used to unload the physical RAM (RAM) of your computer when it reaches saturation. The trading space is usually in a form of hard disk partition - it is called an exchange partition. It can also be in the form of a file - it is called a file of exchange.
+
+
+By default, Ubuntu automatically calculates and allocates a sufficient or recommended swap space when it is installed. There is no need to perform additional tasks to assign a minimum trading space to Ubuntu. However, evaluating your needs for trading space can better streamline your resources.
+
+
+## What is a trading area?
+The physical RAM (RAM) of the computer is used to store data being processed. If it fills up almost completely but your computer still needs resources to process, your operating system may temporarily move memory pages to the swap space on your hard drive to free memory resources. The swap space acts as an extension of your physical RAM: it recovers, if necessary, memory blocks in excess of your physical RAM.
+
+
+Note, however, that the swap space is on your hard drive; access to the data contained in it is slower than the data contained directly in the RAM. In addition, the use of the swap space significantly slows down the system and causes permanent hard disk activity ("scratching" noise), causing premature wear of the hardware. As a result, the swap space should not be seen as a replacement for your physical RAM, but rather as a backup mechanism.
+
+
+Most operating systems - if not all - manage a trading area. With GNU / Linux operating systems, of which Ubuntu is a part, this exchange zone is usually in the form of a hard disk partition dedicated for this purpose. For comparison, Microsoft® Windows® uses one or more files in each of its volumes to play this role. It is also possible in Ubuntu to create and use files that provide a swap space.
+
+
+Linux can use a partition called "Swap" that can be used in addition to the RAM
+
+
+## Why do I need a trading room?
+
+* Using resource-intensive programs: Sometimes programs require a lot of resources on your computer (such as the LibreOffice office suite, games like AlienArena, or video editing software like Cinelerra), which makes your computer require more resources than available. Often, a portion of the RAM used to load these programs is actually exploited only during their initialization and is no longer used later. The system can free up resources by moving such memory pages to a swap space in your hard drive.
+* Hibernation: The hibernation feature keeps your system in the current state when you turn off your computer, allowing you to resume your work faster where you left off. by not consuming power from your battery or mains supply. Technically, it is a copy of all the information contained in the RAM of your computer to the exchange space of your hard disk; for this reason, an Exchange partition at least as big as the amount of your RAM is required to take advantage of this feature.Unplanned Circumstances: Unpredictable events can occur when using your system (a program that has a memory leak, an action that needs more memory for a short time, or a combination of these events). Having a swap space gives you a reprieve to locate the problem or, at the very least, finish your work in progress.
+* Memory cache: Since access to files on your hard disk is slower than those in RAM, the Linux kernel caches open files in RAM. This greatly speeds up the treatments. In order to keep a maximum of space for this cache, part of the RAM reserved by the programs but not used is moved into the exchange space.
+
+## Virtualization
+Linux also opens the possibility of getting a perfect separation between multiple virtual environments running on a single physical computer, taking into account the virtualization modules present in recent processors like AMD-V on AMD and Intel-VT (or IVT) on Intel. These virtualization environments make it possible to run different environments or several similar environments on the same machine, while providing some security in the separation of accesses. This system has been used for a long time by IBM mainframes. IBM has also ported Linux on these to allow its customers to continue using them with a more modern system.
+
+
+KVM is, since version 2.6.20 of the Linux kernel, the official system of virtualization of the latter. Coupled with QEMU tools, it allows you to create virtual machines running directly on an unmodified Linux kernel and is able to host a large number of operating systems, such as Windows, Solaris, BSD, and so on. KVM is at the heart of Red Hat's virtualization strategy.
+
+

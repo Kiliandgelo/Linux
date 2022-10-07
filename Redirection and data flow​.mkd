@@ -1,0 +1,314 @@
+## Redirection and data flow
+* the Input / Output system
+  * Redirection of standard flow (stdout) and error flow (stderr)
+  * Redirection of the input stream (stdin)
+
+## the Input / Output system
+Each process (Program) has 3 standard streams, which it uses to communicate in general with the user:
+* the standard input named stdin (identifier 0): this is the default keyboard,
+* the standard output named stdout (identifier 1): this defaults to the screen,
+* the standard error output named stderr (identifier 2): this defaults to the screen.
+ 
+ 
+These feeds can be redirected so that the process interacts with another instead of interacting with the user.
+
+
+As mentioned, we touch a major point of the Unix system and the operation of the console. It is therefore important to pay attention to this lesson!
+
+## Redirection of standard flow (stdout) and error flow (stderr)
+For starters we'll see how to redirect the output stream to a file. To redirect the result of a command, you can use the> operator or the >> operator.
+
+    * >: redirects. Allows you to redirect the result of the command to the file of your choice. This will create a new file. If the file already exists, it will be overwritten!
+    * >>: also serves to redirect the result into a file, but this time at the end of this file. This makes an addition at the end of the file. If the file does not exist, it will be created.
+
+
+Here is an example of the use of the operator>
+
+### example redirecting the command output
+```
+# redirection of the content of / tmp in the file resultat_ls_dans_tmp
+username@hostname:~$ ls /tmp/ > resultat_cmd_ls
+ 
+# File result
+username@hostname:~$ cat resultat_cmd_ls
+plugtmp
+pulse-2L9K88eMlGn7
+pulse-9OCjK6d0fVDK
+pulse-PKdhtXMmr18n
+qtsingleapp-clemen-d211-3e8
+qtsingleapp-clemen-d211-3e8-lockfile
+rewrite.txt
+sni-qt_clementine_21461-1zy8dg
+sni-qt_python2.7_28814-9cKt07
+ssh-HtTxbMN28694
+switchExplorer_installed-1.html
+switchExplorer_installed.html
+ 
+# redirection of the content of / etc in the file resultat_ls_dans_tmp
+username@hostname:~$ ls /etc/ > resultat_cmd_ls
+ 
+# File was overwritten with new content.
+username@hostname:~$ head /tmp/resultat_cmd_ls
+acpi
+adduser.conf
+alternatives
+anacrontab
+antidote.conf
+apache2
+apg.conf
+apm
+apparmor
+apparmor.d
+``` 
+
+
+Let's go back to the same operation, but with the double operator >>:
+
+
+```
+# redirection of the content of / tmp in the file resultat_ls_dans_tmp
+username@hostname:~$ ls /tmp/ >> resultat_cmd_ls_double
+ 
+# File result
+username@hostname:~$ cat resultat_cmd_ls_double
+plugtmp
+pulse-2L9K88eMlGn7
+pulse-9OCjK6d0fVDK
+pulse-PKdhtXMmr18n
+qtsingleapp-clemen-d211-3e8
+qtsingleapp-clemen-d211-3e8-lockfile
+rewrite.txt
+sni-qt_clementine_21461-1zy8dg
+sni-qt_python2.7_28814-9cKt07
+ssh-HtTxbMN28694
+switchExplorer_installed-1.html
+switchExplorer_installed.html
+ 
+# redirection of the content of / etc in the file resultat_ls_dans_tmp
+username@hostname:~$ ls /etc/ >> resultat_cmd_ls_double
+ 
+# the result of the command ls / tmp is always present at the beginning, the result
+# of the command ls / etc is at the end of the file.
+username@hostname:~$ head resultat_cmd_ls_double
+plugtmp
+pulse-2L9K88eMlGn7
+pulse-9OCjK6d0fVDK
+pulse-PKdhtXMmr18n
+qtsingleapp-clemen-d211-3e8
+qtsingleapp-clemen-d211-3e8-lockfile
+rewrite.txt
+sni-qt_clementine_21461-1zy8dg
+sni-qt_python2.7_28814-9cKt07
+ssh-HtTxbMN28694
+switchExplorer_installed-1.html
+switchExplorer_installed.html
+ 
+# the contents of the command ls / etc at the end of the file
+username@hostname:~$ tail resultat_cmd_ls_double
+wireshark
+wodim.conf
+wpa_supplicant
+X11
+xdg
+xml
+xpdf
+xul-ext
+xulrunner-2.0
+zsh_command_not_found
+``` 
+ 
+Basically this is as follows:
+ 
+ 
+We saw that instead of using the screen, which is the default output, we redirected the result to a file. We used the ls command, but this works just as well with any command (ex .: cat, tail, head, ...).
+In the example above, we mainly redirected the stdout (1). Here is an example, again with ls, of an error-free command and an error command:
+
+### command ls redirection with error
+
+```
+# commande without error
+username@hostname:~$ ls -l /etc/passwd /etc/group > /tmp/show_files
+ 
+# Result
+username@hostname:~$ cat /tmp/show_files
+-rw-r--r-- 1 root root 1204 Dec  6 12:37 /etc/group
+-rw-r--r-- 1 root root 2653 Nov 29 15:51 /etc/passwd
+ 
+# command WITH errors, I add the listing of the file
+# /etc/networking qui existe pas 
+username@hostname:~$  ls -l /etc/passwd /etc/group /etc/networking > /tmp/show_files 
+ls: cannot access /etc/networking: No such file or directory
+ 
+# Result, the file contains ONLY the result WITHOUT error
+username@hostname:~$ cat /tmp/show_files
+-rw-r--r-- 1 root root 1204 Dec  6 12:37 /etc/group
+-rw-r--r-- 1 root root 2653 Nov 29 15:51 /etc/passwd
+```
+
+As you can see, the displayed result and the one redirected in the file / tmp / show_files are equivalent. However, when using the ls command with the error, we also had an error message on the screen: "ls: can not access / etc / networking: No such file or directory".
+
+
+Why does this message appear when we have indicated to redirect the file?
+
+
+The reason is that when using> or >>, we only redirect the identifier 1, ie stdout. If we want to redirect the error messages, stderr (2), we will have to specifically identify it. Here's how to do it:
+
+### ls command with error redirection
+
+```
+# LS command with standard output redirection AND error standard
+username@hostname:~$ls -l /etc/passwd /etc/group /etc/networking > /tmp/show_files  2>/tmp/show_files_err
+ 
+# visualization of the result:
+username@hostname:~$ cat /tmp/show_files_err
+ls: cannot access /etc/networking: No such file or directory
+ 
+#
+username@hostname:~$cat /tmp/show_files
+-rw-r--r-- 1 root root 1204 Dec  6 12:37 /etc/group
+-rw-r--r-- 1 root root 2653 Nov 29 15:51 /etc/passwd
+```
+
+Thanks to the identifier 2>, we redirected the messages from the stderr to the file / tmp / show_files_err. In other words, when you use the> operator, it is equivalent to 1>.
+
+
+Here I only mention the> operator; it's equivalent with the double operator >>.
+ 
+ 
+It's all well and good, but if you want to have all the messages (the good ones and the bad ones) in a file? You might be tempted to do this:
+
+### stdout and stderr redirection in the same file, wrong method
+
+```
+# try
+username@hostname:~$ ls -l /etc/passwd /etc/group /etc/networking 1>/tmp/show_files  2>/tmp/show_files
+ 
+# Unfortunately this does NOT work!
+username@hostname:~$ cat /tmp/show_files
+-rw-r--r-- 1 root root 1204 Dec  6 12:37 /etc/group
+-rw-r--r-- 1 root root 2653 Nov 29 15:51 /etc/passwd
+```
+
+To perform this configuration there is 2 method, to redirect the error stream stderr (2) to the standard output stdout (1), or you can use the & operator.
+* 2> & 1: With this notation we redirect stderr (2) to stdout (1)
+* &>: We redirect all flows stdout (1) AND stderr (2)
+
+
+Here is an example :
+### command with redirection of all flows
+
+```
+# redirection of all flows
+# redirection from stderr to stdout.
+username@hostname:~$ ls -l /etc/passwd /etc/group /etc/networking 1>/tmp/show_files  2>&
+ 
+# Validation of the contents of the file
+username@hostname:~$ cat /tmp/show_files
+ls: cannot access /etc/networking: No such file or directory
+-rw-r--r-- 1 root root 1204 Dec  6 12:37 /etc/group
+-rw-r--r-- 1 root root 2653 Nov 29 15:51 /etc/passwd
+ 
+# Command with &>
+username@hostname:~$ ls -l /etc/passwd /etc/group /etc/networking &>/tmp/show_files
+ 
+# Validation of the contents of the file
+username@hostname:~$ cat /tmp/show_files
+ls: cannot access /etc/networking: No such file or directory
+-rw-r--r-- 1 root root 1204 Dec  6 12:37 /etc/group
+-rw-r--r-- 1 root root 2653 Nov 29 15:51 /etc/passwd
+```
+
+ 
+## Redirection of the input stream (stdin)
+We have seen, in the previous section, the management of the two flows stdout (1) and stderr (2), which are redirected by default to the screen. We redirected them to files. However, we have not yet touched the other stream, which is the stdin (0); the input stream.
+
+
+We will see an example with the command cat
+
+### normal cat and with stdin
+
+```
+# Classical use of cat
+username@hostname:~$ cat notes.cvs
+Fabrice,18 / 20,Excellent work
+Mathieu,3 / 20,Not good
+Sophie,14 / 20,Going up
+Mélanie,9 / 20,Almost !
+Corentin,11 / 20,Not too bad 
+Albert,20 / 20,Perfect
+Benoît,5 / 20,Going down
+ 
+# Use with stdin redirection
+username@hostname:~$ cat < notes.csv
+Fabrice,18 / 20,Excellent work
+Mathieu,3 / 20,Not good
+Sophie,14 / 20,Going up
+Mélanie,9 / 20,Almost !
+Corentin,11 / 20,Not too bad 
+Albert,20 / 20,Perfect
+Benoît,5 / 20,Going down
+```
+
+Writing cat The result produced is the same, but what happens behind is very different.
+* If you write cat notes.csv, the cat command receives the name of the notes.csv file as input, which it must then open to display its contents.
+* If you write cat <notes.csv, the cat command receives the contents of notes.csv that it just displays in the console. It is the shell (the program that manages the console) that sends the contents of notes.csv to the cat command.
+
+
+In short, they are two ways to do the same thing but in a very different way.
+
+
+The double chevron opening << does something quite different: it allows you to send content to a command with your keyboard.
+
+
+This can be very useful. I propose a concrete example to see what it allows to do in practice.
+
+
+We will use the sort command to perform the demonstration. This command allows us to sort the contents of a file, or any content that the sort command receives, whether using a file or from the standard input (stdin 0).
+
+
+Here is an example : 
+### example stdin with << using sort
+```
+# example with the sort command
+# we are going to write numbers, one per line (by pressing the Enter key each time).
+# When finished, tap FIN to stop typing.
+username@hostname:~$ sort -n << FIN
+> 13
+> 132
+> 10
+> 131
+> 34
+> 87
+> 66
+> 68
+> 65
+> FIN
+10
+13
+34
+65
+66
+68
+87
+131
+132
+```
+
+So << passes the console in keyboard input mode, line by line. All these lines will be sent to the command when the end keyword has been written.
+ 
+ 
+It is of course possible to combine everything:
+
+
+### example use stdin, stdout, stderr combine everything
+```
+#The numbers typed on the keyboard will be sent to numbers_tries.txt,
+# as well as possible errors.
+username@hostname:~$ sort -n << FIN > nombres_tries.txt 2>&1
+> 18
+> 27
+> 1
+> FIN
+```
+
+

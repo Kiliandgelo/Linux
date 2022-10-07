@@ -1,0 +1,166 @@
+# APT repository management system
+We covered in the previous lesson the YUM / redhat repository management system we will see here the repository system of Ubuntu / Debian.
+
+## Repositories
+APT repositories are "software sources", specifically servers that contain a set of packages. Using a tool called package manager, you can access these repositories and, with a few mouse clicks, you can find, download and install the software of your choice.
+
+
+This system saves you from browsing your Ubuntu CDs and the Internet to find packages for your software.
+
+
+The use of these tools centralizes software management and simplifies it. They also allow distributors (those who set up deposits) to provide you with updates through a centralized channel.
+
+
+Ubuntu also includes a basic tool called Update Manager, which periodically checks in the repositories to which you have access that you have the latest versions of your software and libraries; otherwise, it allows you to update them automatically.
+
+
+Deposits that Ubuntu accesses by default, to check for software updates and search for software to install, are repositories maintained by the Ubuntu Foundation (the Ubuntu development group) and your installation CD. You can expand (or reduce) the list of deposits available to your system by adding or removing deposits from other distributors. (see: modify deposits)
+
+
+Under Ubuntu, the vast majority of applications are available in official repositories and are directly installable using graphical tools such as The Ubuntu Software Center.
+
+
+There's nothing stopping you from installing software from other repositories or websites, but be careful, because these programs are not tested by the Ubuntu development team and can be dangerous for your system. , or just badly integrate into your environment, have bugs ...
+
+
+## Configuration
+The whole configuration of apt this finds in the directory / etc / apt /
+* apt.conf.d : apt application configuration directory
+* preferences.d: setting preferences
+* sources.list.d : directory containing the deposit / repository list available
+* sources.list : files containing the available debuff / repository list
+* trustdb.gpg : DB file containing a GPG key list for package validation
+
+Here is the contents of the sources.list file, I made a clean up of the display for not having the comments
+### File /etc/apt/sources.list
+```
+admuser@srv01:/etc/apt$ cat /etc/apt/sources.list | grep -v "^#"
+ 
+deb http://ca.archive.ubuntu.com/ubuntu/ precise main restricted
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise main restricted
+ 
+deb http://ca.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise-updates main restricted
+ 
+deb http://ca.archive.ubuntu.com/ubuntu/ precise universe
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise universe
+deb http://ca.archive.ubuntu.com/ubuntu/ precise-updates universe
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise-updates universe
+ 
+deb http://ca.archive.ubuntu.com/ubuntu/ precise multiverse
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise multiverse
+deb http://ca.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise-updates multiverse
+ 
+deb http://ca.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+deb-src http://ca.archive.ubuntu.com/ubuntu/ precise-backports main restricted universe multiverse
+ 
+deb http://security.ubuntu.com/ubuntu precise-security main restricted
+deb-src http://security.ubuntu.com/ubuntu precise-security main restricted
+deb http://security.ubuntu.com/ubuntu precise-security universe
+deb-src http://security.ubuntu.com/ubuntu precise-security universe
+deb http://security.ubuntu.com/ubuntu precise-security multiverse
+deb-src http://security.ubuntu.com/ubuntu precise-security multiverse
+``` 
+ 
+ 
+This file was not corrupted, so we have the original system file during installation.
+
+## Main branches
+The packages contained in the repositories are distributed in various sections and branches. The branch corresponds to the utility of the repository (main branch, branch of security updates, branch of backport, etc.). The section groups packages according to their maintenance by the Ubuntu developers and by their license. Access to the various APT deposits is done by adding a deposit address, or APT line, in the following form:
+
+
+    deb   http://www.server.tld         #Name of depot 
+    deb-src   http://www.server.tld         #Name of depot  (contain source code of softwares)
+    
+    
+In the forum and in this documentation, you will sometimes be asked / advised APT repositories other than those configured by default by the Ubuntu installer.
+
+
+Be aware that many other repositories exist elsewhere in the web. However, their reliability (security of packets contained and compatibility with Ubuntu, availability of the deposit, confidence in the deposit maintainer ...) is not always assured. The deposits we present here are considered secure; we advise you to inquire before adding deposits not shown here, as these may damage the core of your system.
+
+
+## Official repositories
+Access to official repositories is automatically configured. They include basic repositories, update and security repositories. All branches of the main depots are divided into four sections:
+
+
+Main and Restricted sections, maintained by Ubuntu developers
+
+
+The main (free packages) and restricted (non-free packages) sections contain packages maintained by the Ubuntu developers for the lifetime of the Ubuntu version you are using.
+
+
+Universe and Multiverse sections, maintained by MOTU
+
+
+The universe and multiverse sections of the official repositories contain packages maintained by the community. The Ubuntu Foundation does not control these packages; they are analyzed by a user committee. The universe section contains only free packages and the multiverse section, non-free packages. Access to these two sections is set by default.
+
+
+## Repositories PPA
+Personal Package Archives (PPAs) are repositories of software packages for individuals and teams of developers who want to easily offer their software to Ubuntu users. The service, offered as part of the LaunchPad platform, takes source code from software developers and generates .deb packages that Ubuntu users can install through their software package manager.
+
+
+The advantage of a packet from a PPA over an isolated packet: If a package installed from a PPA is upgraded, you will automatically benefit.
+
+## Warning to read before using PPPs
+* Although offered as part of the Launchpad platform, each PPA is maintained by contributors and development teams specific to each project. By enabling access on your computer to a PPA, you agree to trust the maintainers of this specific PPA.
+* Under no circumstances will packages coming from a PPA be maintained by Canonical, nor will they benefit from official Ubuntu validation, or official Ubuntu team developer support. 1)
+* PPPs usually contain several software packages and updated libraries for these programs. It is therefore possible that updates having a major impact on your Ubuntu system are proposed to you following the activation of access to a PPA. Only enable access to essential and trusted PPPs. 2)
+
+
+## Presentation of the postgreSql case
+In order to demonstrate the configuration of a repository / repository we will resume the case of postgresql. Firstly which version is available on Ubuntu 12.04?
+
+### postgresql server package search
+```
+admuser@srv01:/etc/apt$ apt-cache search postgresql | grep ^postgresql | grep server$ 
+postgresql-9.1 - object-relational SQL database, version 9.1 server
+postgresql-8.4 - object-relational SQL database, version 8.4 server
+```
+
+We have version 9.1 and 8.4, unfortunately we want the 9.3 version for our need, so we will realize the search for the package on the internet. The postgresql developers offers a repository for Ubuntu so we will be able to configure the latter information is available at the URL: http://www.postgresql.org/download/linux/ubuntu/.
+
+
+We will create a file in the directory /etc/apt/sources.list.d/, it would be equally valid to modify the file /etc/apt/sources.list however it is easier to visualize the manually added repository by realizing a ls in a directory that read the configuration file.
+
+### Creating configuration file for postgresql server
+
+    admuser@srv01:/etc/apt$ sudo vim /etc/apt/sources.list.d/pgdg.list
+    deb http://apt.postgresql.org/pub/repos/apt/ precise-pgdg main
+    
+Import GPG key used for signing packages.
+### import gpg key of postgresql
+
+    wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+Update packages available in the cache
+### Update apt-get cache
+```
+admuser@srv01:/etc/apt$ sudo apt-get update
+Get:1 http://security.ubuntu.com precise-security Release.gpg [198 B]
+Hit http://ca.archive.ubuntu.com precise Release.gpg                                                     
+Get:2 http://ca.archive.ubuntu.com precise-updates Release.gpg [198 B]       
+Hit http://ca.archive.ubuntu.com precise-backports Release.gpg               
+Get:3 http://security.ubuntu.com precise-security Release [49.6 kB]
+[[ .... ]]
+Get:17 http://apt.postgresql.org precise-pgdg/main i386 Packages [48.1 kB]   
+[[ .... ]]
+Hit http://ca.archive.ubuntu.com precise-backports/universe Translation-en                                                                  
+Fetched 3,236 kB in 8s (388 kB/s)                                                                                                           
+Reading package lists... Done
+```
+
+Performing postgres search
+### Viewing packages available for postgres
+```
+admuser@srv01:/etc/apt$ apt-cache search postgresql | grep ^postgresql | grep server$ 
+postgresql-9.1 - object-relational SQL database, version 9.1 server
+postgresql-8.4 - object-relational SQL database, version 8.4 server
+postgresql-8.2 - object-relational SQL database, version 8.2 server
+postgresql-8.3 - object-relational SQL database, version 8.3 server
+postgresql-9.0 - object-relational SQL database, version 9.0 server
+postgresql-9.2 - object-relational SQL database, version 9.2 server
+postgresql-9.3 - object-relational SQL database, version 9.3 server
+postgresql-9.4 - object-relational SQL database, version 9.4 server
+```
+

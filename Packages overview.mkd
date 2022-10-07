@@ -1,0 +1,72 @@
+# Packages overview
+* Concept of installing software under GNU / Linux
+* Definition of a package
+* Dependency management
+* Installation and de-installation script
+* Packages and Internet
+
+## Concept of installing software under GNU / Linux
+Here's how the GNU / Linux software installation concept works: First, a lot of software is provided / available by the GNU / Linux distribution you have chosen. The majority of distributions offer a range of software for your use and, 95% of the time, you will find the software in the list available with the package manager.
+
+
+If you can not find the software or the available version is not the one you want, there are repositories that allow you to extend the choice of available software. To do this, you will configure your package manager to search for packages at this new location, in addition to the distribution. Again, it's a good idea to have your software managed by a package manager, making sure the dependencies are well respected and, in principle, the packages will work for your version of GNU / Linux. Of course, it is important to pay attention to the added repositories; you have to make sure they have a good reputation so that they do not install malware on their Linux.
+
+
+In the situation where no one provides the software, but the software is free, you can download the software and install it manually by compiling the program from the sources. In this case, there is no dependency management; it can be difficult to install in this way, especially when you start ...
+
+
+In the case where the software is private, you must use the installer provided by the program and, of course, download the software from the official website of the product.
+
+
+I would like to reiterate that 95% of the software is installable with the packages provided by the distribution. So, before breaking your head, see if it's available!
+
+
+## Definition of a package
+A package is an archive containing data and / or programs as well as the information necessary for a correct installation of these on the system. A package consists of a single file, which is not an executable. It is supported by a dedicated program: the package manager.
+
+
+There are several different types of packages:
+* [RPM]: for Redhat Package Manager. This is the type of package most used in Linux. These packages manage dependencies and install / uninstall scripts.
+* [DEB]: The type of package used by the Debian distribution and its derivatives. It handles scripts and dependencies in a finer way than RPM.
+* [tar.gz]: used by slackware distributions. This is a simple archive that also contains the installation scripts.
+* [pkg]: This extension can designate several different types of packages used by proprietary Unix, such as solaris or QNX.
+
+
+It should be noted that the different free BSD flavors use a different system, called ports, where programs are systematically recompiled.
+
+
+## Dependency management
+Dependency management is a big advantage of package systems.
+
+
+Each package contains a list of the features it provides. It starts with the name of the package itself, it can also be a particular program, a generic library or in a particular version or a more "diffuse" feature, such as "ftp server" for apache, or " download manager '' for wget.
+
+
+Then the packages will contain a list of the features they need to be functional2.
+
+
+During installation, the package manager will verify that all dependencies are verified and that the installation of the new package will not overwrite files from other packages. Otherwise, he will refuse to install. It remains possible to force the installation at his own risk.
+
+
+Similarly, when uninstalling a package, the package manager checks that the removal of this package (s) does not interfere with the operation of other packages. Once again, we can ignore the dependencies, but it can be quite serious (force the uninstall of glibc is the perfect example of what to do if you want to fuck his system) .
+
+## Installation and de-installation script
+If, to install a documentation, it is enough to uncompress the files, it is not necessarily the same for programs, let alone for libraries, the installation of which will require to perform operations on the system so that the contents of the package are fully functional.
+
+
+This is the purpose of the install / uninstall scripts, which are in the form of simple shell scripts (sh standard). There are four of them:
+* [the pre-installation script]: it does all the preparatory operations for the installation.
+* [the post-installation script]: take care of the entire post-installation configuration, for example register new libraries, or generate a configuration in accordance with the machine on which it is installed.
+* [the pre-uninstallation script]: takes care of the operations to be performed before uninstalling the package. For example, if it is any server, you must stop it before uninstalling it.
+* [the post-uninstallation script]: is responsible for the operations to be performed after uninstallation.
+
+
+## Packages and Internet
+The package system is independent of the Internet, as each package contains the list of dependencies that it needs to work, it does not need an external source. Each package system locally maintains a database, with information about the packages installed on the system. The latter is queried if there is a need to validate dependencies during the installation.
+* deb: / var / lib / dpkg: contains all the information about the packages on the system and the software, and manages packages under debian. Bears the name of DPKG
+* rpm: / var / lib / rpm, contains all the information about the packages on the system and the software, and manages packages under RedHat. Bears the name of RPM
+
+
+The package system indicates the list of dependencies to resolve in order to install the package. Nowadays, tools have been created that can search these packages directly on the Internet, download them and provide the file to the package manager.
+
+

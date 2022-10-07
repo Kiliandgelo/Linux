@@ -1,0 +1,45 @@
+# Creating, editing & deleting groups
+## Creating a group
+To create a group we can use the original groupadd command as well as addgroup, this is very similar to what we saw for users, in other words groupadd is available on all unix systems, while addgroup is a command that adds functionality but uses groupadd at the end. We create system groups or regular groups as needed. Here are some examples of how to use orders:
+
+### example group creation
+```
+# Marketing group creation
+admuser@srv01:~$ sudo groupadd Marketing
+admuser@srv01:~$
+ 
+# Team creation equipe_ti
+admuser@srv01:~$ sudo addgroup equipe_ti
+Adding group 'equipe_ti' (GID 1004) ...
+Done.
+```
+
+Creating a group is less complex than a user ...
+
+## Group modification
+The group edit command changes the group's properties, not the members, so changing members must do so with the user's edit commands. Of course it is always possible to modify the file / etc / group directly however this entails risks. The command to use is groupmod, we can with this last one change the name or the GID of the group:
+
+### group modification
+```
+# group modification
+admuser@srv01:~$ sudo groupmod --gid 1100 ITTeam
+admuser@srv01:~$ getent group ITTeam
+ITTeam:x:1100:
+``` 
+## Deleting a group
+For the suppression of a group we find the 2 commands groupdel and delgroup, the name of the group is provided in argument example:
+
+### group deletion
+
+```
+# removal of marketing
+admuser@srv01:~$ sudo delgroup  Marketing
+Removing group 'Marketing' ...
+Done.
+ 
+# removal ITTeam
+admuser@srv01:~$ sudo groupdel  ITTeam
+admuser@srv01:~$
+```
+If you are writing scripts and using the delgroup command it might be interesting to use the option: --only-if-empty the group will only be deleted if the user is empty.
+

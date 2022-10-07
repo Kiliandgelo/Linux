@@ -1,0 +1,82 @@
+# Getting Started 
+* RedHat package system
+  * Package Management Tools
+* Rpm presentation
+*   Command available
+* Yum presentation
+  * Command available
+## RedHat package system
+Packages usually contain all the files needed to implement a set of commands or features. There are two kinds of RedHat packages:
+* Binary packages containing executables, configuration files, manual or info pages, copyright information, and other documentation. These packages are distributed in an RPM archive format. They are usually recognizable by the ".rpm" extension. They can be installed using the RPM utility; you will find more details in the man pages.
+* The source packages consist of a .srpm file describing the source package. The package contains a tar.gz with the source code of the application, as well as .patch files including the patch applied to the software. The set of compilation arguments and installation scripts are defined in the .spec files.
+
+
+RedHat package management tools can be used to:
+* manipulate or administer packages or part of the packages,
+* administer local changes ("overrides") files of a package,
+* help developers in building packages
+
+
+The name of the RedHat binary packages conforms to the following convention: package_name-version-release.architecture.rpm
+
+## Package Management Tools
+* rpm - Package Installation and Validation of Dependencies
+* yum - Allows getting packages from the Internet (the network)
+
+rpm uses the / var / lib / rpm directory to store this package information database. yum uses the / var / cache / yum directory to store downloaded files from the internet.
+
+## Rpm presentation
+rpm (for RedHat Package Management) is a command-line software tool responsible for installing, creating, deleting and managing rpm packets (.rpm), the type of packets processed by RedHat / CentOS / Fedora. For package installation, rpm has a GUI, Kpackage, GnoRPM, Midnight Commander, ... that you can use if you prefer to avoid the command line.
+
+
+Unlike the yum command, rpm is a tool that does not handle dependencies. Thus in case of conflict or when only certain packets involving too many dependencies are missing, the use of this tool becomes almost indispensable. yum use this tool to solve some typical problems. It allows to play on a single package (installation, removal, reconfiguration) without upsetting the dependencies. Among its other functions rpm also allows to have accurate information such as state or detailed description, available packages.
+
+
+### Command available
+* Package installation, previously downloaded
+
+      user@hostname:~$ sudo rpm -i package.rpm
+
+* Deleting package.
+
+      user@hostname:~$ sudo rpm -i package
+
+* List packages install
+
+      user@hostname:~$ rpm -qa 
+
+* File search in the package system.
+
+      user@hostname:~$ rpm -qF /bin/ls 
+
+
+## Presentation of yum
+Yum, for Yellowdog Updater Modified, is a package manager for Linux distributions such as Fedora and Red Hat Enterprise Linux1, created by Yellow Dog Linux.
+
+
+It allows to manage the installation and the update of the software installed on a distribution. It is an overlay of RPM handling downloads and dependencies, in the same way as Debian's APT or Mandriv's Urpmi. There are several types of parameters that can follow the YUM command. Some concern the installation (like install), the deletion (like remove), the search (search) or the update of the system (update). When running YUM on the command line, this utility will first query a number of activated repositories that are defined in the /etc/yum.repos.d/ directory or view its cache. Depending on the information obtained, it can process the parameter that has been added.
+
+
+## Command available
+
+* Package search
+
+      user@hostname:~$ yum search package_name
+
+* Package installation
+  
+      user@hostname:~$ sudo yum install package
+
+* Deleting package
+
+      user@hostname:~$ sudo yum remove package
+
+* Identification if there is update and update
+
+      user@hostname:~$ sudo yum check-update
+      and 
+      user@hostname:~$ sudo yum upgrade
+
+* Deleting cached packages
+      
+      user@hostname:~$ sudo yum clean all

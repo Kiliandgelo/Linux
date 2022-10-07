@@ -1,0 +1,740 @@
+# Presentation of docker
+* Docker Introduction
+  * A container is not a VM
+  * Why Docker
+  * Docker Architecture
+    * Creation of a container
+      * Retrieving an image from dockerhub
+      * Visualization of dockers present
+      * Execute this container
+      * Creating a custom image
+  * Use of dockers
+    * Network
+    * Using data in a container
+      * MountBind
+      * Assign a name to the docker == a layer
+      * Burn a layer (adding a layer)
+      * Service definition at bootup
+  * The life cycle with Docker
+
+## Docker Introduction
+The purpose of Docker is to provide easy-to-deploy application containers to encapsulate the application, including all of these dependencies and their versions.
+* With Docker you can separate your applications from your infrastructure AND treat your infrastructure like a managed application
+* Docker provides a way to run almost any application securely isolated in a container.
+* The isolation and security allow you to run many containers simultaneously on your host.
+* The lightweight nature of containers, which run without the extra load of a hypervisor, means you can get more out of your hardware.
+* Distributing and shipping those containers to your teams for further development and testing
+
+## A container is not a VM
+* Virtual Machine (Vmware, KVM, ...)
+  * Installing a complete operating system
+  * Emulation of all the hardware (CPU, memory, ...)
+  * Installing applications + library
+* Container
+  * only contains the linked application and libraries
+ 
+ 
+The host system is managed directly by the Docker Engine. We have a mutualization that allows to launch containers very quickly: the launch time of a container is almost the same as the launch time of the applications it contains. Indeed, the operating system is already launched. So no startup phase or initialization of this layer.
+* It is more appropriate to see the containers as one or more chrooted applications (limited in one space of the system)
+* Advantage is that each container at its stack ip, it is possible to make them communicate without problem (practical during VPN connection.)
+* Each container has dedicated root access
+
+
+What are the advantages of docker compared to jail under BSD that has existed for 15 years?
+* Administration of containers simplify with the use of DockerFiles to build the image of the container
+* Possibility of managing the container versions
+* Ability to store, pull, push containers (registry, hub.docker.com)
+* API Rest
+* Using unionFS to reuse disk space for equivalent disk blocks.
+
+
+## Why Docker
+* Faster delivery of your applications
+  * We want your environment to work better. Docker containers, and the work flow that comes with them, help your developers, sysadmins, QA folks, and release engineers work together to get your code into production and make it useful. We've created a standard container format that lets developers care about their applications inside containers while sysadmins and operators can work on running the container in your deployment.
+  * We make it easy to build new containers, enable rapid iteration of your applications, and increase the visibility of changes.
+  * Docker containers are lightweight and fast! Containers have sub-second launch times, reducing the cycle time of development, testing, and deployment.
+* Deploy and scale more easily
+  * Docker containers run (almost) everywhere. You can deploy containers on desktops, physical servers, virtual machines ...
+  * Since Docker runs on so many platforms, it's easy to move your applications around. You can easily move an application from a testing environment into the cloud and back whenever you need.
+  * Docker's lightweight containers also make scaling up and down fast and easy.
+* Get higher density and run more workloads
+  * Docker containers don't need a hypervisor, so you can pack more of them onto your hosts. This means you get more value out of every server and can potentially reduce what you spend on equipment and licenses.
+  * Faster deployment makes for easier management
+    * As Docker speeds up your work flow, it gets easier to make lots of small changes instead of huge, big bang updates
+
+
+Source : About Docker
+
+
+## Docker Architecture
+The docker components:
+* The docker software: installed on the GNU / Linux server obligatorily, (distributed under Apache 2.0 license)
+* Docker Hub: Provides a container sharing platform
+
+
+Docker uses a client-server architecture. The Docker customer talks to the Docker daemon, which does the heavy lifting of building, running, and distributing your Docker containers. Both the Docker client and the daemon can run on the same system, or you can connect a Docker client to a remote Docker daemon. The Docker client and daemon communicate via sockets or through a RESTful API.
+* Client : Represents all the instructions made with the docker bin
+* Daemon: The process on the service that performs the heavy lifting with the OS and the registry
+* Registry: Site or server offering container images
+
+
+Let's see the details with the creation of a container this will offer us the theory and the practice
+
+
+## Creation of a container
+
+### Retrieving an image from dockerhub
+This is a little destabilizing because there is a large number of docker present that are often uploaded by anyone! The public distributions (ubuntu, centos) are identify as official!
+
+      $ docker pull centos  $ docker pull ubuntu:14.04 $ docker pull debian:jessie
+
+### Visualization of dockers present
+You can use the docker images command to see the images on your hosts
+
+      $ docker images  TODO ajouter output
+
+### Execute this container
+
+Execution of the container simply following its extraction from depo, in our case dockerhub. We will use the docker run command with the arguments:
+* -i: interactive
+* -t: with a tty.
+
+### Command :
+
+```
+$ docker -it debian:jessie 
+root@d5dcc5392fd2:/# ps auuf 
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND 
+root         1  0.0  0.1   3592  2512 ?        Ss   22:00   0:00 /bin/bash 
+root         7  0.0  0.0   2928  1756 ?        R+   22:03   0:00 ps auuf
+```
+
+
+So we have a generated hostname which is actually the id of the container, if we use another console and we list the dockers in execution with docker ps, we will find the dockers
+
+```
+$ docker ps  
+CONTAINER ID    IMAGE                      COMMAND      CREATED         STATUS              PORTS NAMES 
+d5dcc5392fd2    debian:jessie              "/bin/bash"  6 minutes ago   Up 6 minutes        reverent_albattani
+````
+
+During the introduction I insisted on 1 major point that the container is not a virtual machine here we clearly see a difference. When I list running processes ps we only see the bash and the ps command in the container. The first process that started PID 1 is bash.
+
+
+While if I make the same command on my host machine in addition to having a significantly larger number of processes we find the PID 1 which is the system initialization process (/ sbin / init). Moreover, we see all the processes of the kernel [process_name].
+
+```
+Host $ ps aux | head 
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND 
+root         1  0.1  0.2   5560  4304 ?        Ss   16:51   0:01 /sbin/init 
+root         2  0.0  0.0      0     0 ?        S    16:51   0:00 [kthreadd] 
+root         3  0.0  0.0      0     0 ?        S    16:51   0:00 [ksoftirqd/0] 
+root         5  0.0  0.0      0     0 ?        S<   16:51   0:00 [kworker/0:0H] 
+root         6  0.0  0.0      0     0 ?        S    16:51   0:00 [kworker/u4:0] 
+root         7  0.1  0.0      0     0 ?        S    16:51   0:01 [rcu_preempt] 
+root         8  0.0  0.0      0     0 ?        S    16:51   0:00 [rcu_sched]
+```
+
+We will see a little further how to start a docker in background ... (TODO: fix this paragraph)
+
+ATTENTION The data of the container are effémaire (TODO: to validate spelling), indeed any modification on the container in the state will be lost once the bash session ended. Demo: P!
+
+```
+$ docker run -it debian:jessie 
+root@085ad9165f9e:/# vi /tmp/toto 
+root@085ad9165f9e:/# echo "say hello " > /root/myfile 
+root@085ad9165f9e:/# ls -l /root/myfile 
+-rw-r--r-- 1 root root 17 Nov 22 22:18 /root/mon_fichier 
+root@085ad9165f9e:/# cat /root/myfile sayhello 
+root@085ad9165f9e:/#  
+root@085ad9165f9e:/# exit 
+$ docker run -it debian:jessie 
+root@c0bc5fd81328:/# ls -l  /root/ 
+total 0 
+root@c0bc5fd81328:/#
+```
+
+As you can see between the number of the container has also changed from 085ad9165f9e to c0bc5fd81328, so it is a new instance of the original image that was loaded! Of course there is way to solve this problem we will see in a few minutes: D.
+
+
+But in itself is the solution really important if we do not understand why ... so see how is structured an image by creating our own image.
+
+
+### Creating a custom image
+A container aims to provide an application with its complete eco system, the concept of docker is not to provide a virtual machine. When images that I download with the docker pull command are minimal containers on which we build our container to provide our application.
+
+
+For demontration we will set up a web server that provides a simple web page. We will build a container with a Dockerfile.
+
+
+Here is the file DockerFile use, we will start from the original image debian: jessie and add the service apache. Here is the contents of the file
+
+```
+$ mkdir websrv
+$ vim Dockerfile 
+FROM debian:jessie 
+MAINTAINER Paul Perret "Paul.perret@patapouf.com" 
+# install apps  
+RUN apt-get update &&  apt-get install -y apache2  
+# Clean up apt-get 
+RUN apt-get clean all
+EXPOSE 80
+```
+
+Put Builder the docker as follows we give the name srvweb-demo to the image
+```
+$ docker build -t srvweb-demo . 
+Sending build context to Docker daemon 2.048 kB 
+Sending build context to Docker daemon  
+Step 0 : FROM debian:jessie  ---> 7dcc01931e09  
+Step 1 : MAINTAINER Perret Paul "paul.perret@patapouf.com"   
+---> Using cache    
+---> 0b1b643b256f    
+Step 2 : RUN apt-get update &&     
+apt-get install -y apache2     
+---> Running in 1e08ac6aa215     
+Ign http://http.debian.net jessie InRelease     
+Get:1 http://http.debian.net jessie Release.gpg [2373 B]    
+Hit http://http.debian.net jessie Release    
+[....]    
+[....]     
+Building dependency tree...     
+The following extra packages will be installed:       
+apache2-bin apache2-data apache2-utils file libalgorithm-c3-perl    
+[....]    
+[....]       
+perl-modules rename sgml-base ssl-cert xml-core      
+0 upgraded, 53 newly installed, 0 to remove and 0 not upgraded.      
+Need to get 11.1 MB of archives.       
+After this operation, 46.5 MB of additional disk space will be used.      
+Get:1 http://http.debian.net/debian/ jessie/main libsasl2-modules-db i386 2.1.26.dfsg1-13 [67.8 kB]    
+[....]     
+[....]    
+Setting up liblua5.1-0:i386 (5.1.5-7.1) ...    
+Setting up apache2-bin (2.4.10-10+deb8u3) ...    
+Setting up apache2-utils (2.4.10-10+deb8u3) ...    
+Setting up apache2-data (2.4.10-10+deb8u3) ...    
+Setting up apache2 (2.4.10-10+deb8u3) ...    
+Processing triggers for sgml-base (1.26+nmu4) ...   
+[....]    
+[....]     
+---> 2bda374cb60b    
+Removing intermediate container 1e08ac6aa215    
+Step 3 : RUN apt-get clean all      
+---> Running in e9e6529e84ef      
+---> 7a3126a11212     
+Removing intermediate container e9e6529e84ef     
+Step 4 : EXPOSE 80      
+---> Running in 37942989b3d5      
+---> 91d0eef1225d     
+Removing intermediate container 37942989b3d5    
+Successfully built 91d0eef1225d
+```
+
+
+Viewing available images:
+```
+$ docker images  
+REPOSITORY   TAG                 IMAGE ID            CREATED             VIRTUAL SIZE 
+srvweb-demo  latest              91d0eef1225d        4 minutes ago       433 MB debian        
+jessie                           7dcc01931e09        3 weeks ago         275.6 MB
+```
+
+Now if we start the docker and look at apache presence and wearing
+```
+$ docker run -it srvweb-demo 
+root@4a9646057695:/# 
+root@4a9646057695:/# dpkg -l |grep apache ii  apache2 
+2.4.10-10+deb8u3         i386         Apache HTTP Server ii  apache2-bin                   
+2.4.10-10+deb8u3         i386         Apache HTTP Server (modules and other binary) ii  apache2-data                
+2.4.10-10+deb8u3         all          Apache HTTP Server (common files) ii  apache2-utils                
+2.4.10-10+deb8u3         i386         Apache HTTP Server (utility programs )
+
+root@4a9646057695:/# ps aux 
+USER       PID %CPU %MEM    VSZ   RSS TTY      STAT START   TIME COMMAND 
+root         1  0.5  0.1   3592  2680 ?        Ss   22:40   0:00 /bin/bash 
+root         8  0.0  0.0   2932  1792 ?        R+   22:40   0:00 ps aux 
+root@4a9646057695:/# netstat -lntp 
+Active Internet connections (only servers)
+Proto 
+Recv-Q Send-Q 
+Local Address          
+Foreign Address         
+State       
+PID/Program name 
+
+root@4a9646057695:/#  
+root@4a9646057695:/#  /etc/init.d/apache2 start
+root@4a9646057695:/#  netstat -lntp 
+Active Internet connections (only servers) 
+Proto tcp6
+Recv-Q Send-Q  0 
+Local Address     0 :::80         
+Foreign Address         :::* 
+State            LISTEN
+PID/Program name     25/apache2
+```
+
+On the Host machine I do not see the port open because, the Host machine and the container each have their IP stack
+
+```
+HOST
+$ sudo netstat -lntp 
+Active Internet connections (only servers) 
+Proto     tcp
+Recv-Q Send-Q    0 
+Local Address     0 127.0.0.1:34120       
+Foreign Address        0.0.0.0:*     
+State           LISTEN 
+PID/Program name    2007/python2
+```
+
+We will see under can the stack ip !!! stay focused on the issue of the filesystem. The container system works by layer layer
+
+
+If we take again our container srvweb-demo it is possible to visualize the used layers, with the docker history command
+
+```
+HOST 
+$ docker history srvweb-demo 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+91d0eef1225d        14 hours ago        /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+7a3126a11212        14 hours ago        /bin/sh -c apt-get clean all                    0 B 
+2bda374cb60b        14 hours ago        /bin/sh -c apt-get update &&     apt-get inst   157.5 MB 
+0b1b643b256f        15 hours ago        /bin/sh -c #(nop) MAINTAINER Perret Paul "t     0 B 
+7dcc01931e09        3 weeks ago         /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B 
+0fd558da9b52        3 weeks ago         /bin/sh -c #(nop) LABEL License=GPLv2           0 B 
+7f08c6429b05        3 weeks ago         /bin/sh -c #(nop) LABEL Vendor=Debian           0 B 
+ccade716b98f        3 weeks ago         /bin/sh -c #(nop) ADD file:5222370b044ddd1aef   275.6 MB 
+6f8878132e44        3 weeks ago         /bin/sh -c #(nop) MAINTAINER Nickcis <ncis20@   0 B
+```
+
+This layer system is a big advantage of the docker system, because the layers can be reused for the creation of another images / container. If I create another image but this time I install in addition openssh.
+
+### Creation of the image, DockerFile file
+```
+FROM debian:jessie 
+MAINTAINER Perret Paul "paul.perret@patapouf.com" 
+# install apps 
+RUN apt-get update &&      apt-get install -y apache2  
+RUN apt-get install -y openssh-server 
+# Clean up apt-get 
+RUN apt-get clean all 
+EXPOSE 80
+```
+
+###Creation of the image
+```
+$ docker build -t websrv-with-ssh . 
+Sending build context to Docker daemon 2.048 kB 
+Sending build context to Docker daemon 
+Step 0 : FROM debian:jessie  
+---> 7dcc01931e09 
+Step 1 : MAINTAINER Perret Paul "paul.perret@patapouf.com"  
+---> Using cache   
+---> 0b1b643b256f  
+Step 2 : RUN apt-get update &&     apt-get install -y apache2   
+---> Using cache   
+---> 2bda374cb60b  
+Step 3 : RUN apt-get install -y openssh-server   
+---> Running in 6b39a8b60d36  
+Reading package lists...  
+Building dependency tree...  
+Reading state information...
+```
+
+###Layers visualization:
+```
+$ docker history websrv-with-ssh 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+6c0125964a07        20 seconds ago      /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+dacc0b7a474c        28 seconds ago      /bin/sh -c apt-get clean all                    0 B 
+9cf1f9b10602        42 seconds ago      /bin/sh -c apt-get install -y openssh-server    46.69 MB 
+2bda374cb60b        15 hours ago        /bin/sh -c apt-get update &&     apt-get inst   157.5 MB 
+0b1b643b256f        15 hours ago        /bin/sh -c #(nop) MAINTAINER Perret Paul "t     0 B 
+7dcc01931e09        3 weeks ago         /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B 
+0fd558da9b52        3 weeks ago         /bin/sh -c #(nop) LABEL License=GPLv2           0 B
+7f08c6429b05        3 weeks ago         /bin/sh -c #(nop) LABEL Vendor=Debian           0 B 
+ccade716b98f        3 weeks ago         /bin/sh -c #(nop) ADD file:5222370b044ddd1aef   275.6 MB
+6f8878132e44        3 weeks ago         /bin/sh -c #(nop) MAINTAINER Nickcis <ncis20@   0 B
+```
+
+It is possible to realize the difference of the layers to visualize what has changed
+
+```
+$ docker history websrv-with-ssh > /tmp/layer-websrv-with-ssh 
+$ docker history srvweb-demo > tmp/layer-srvweb-demo 
+$ diff /tmp/layer-srvweb-demo /tmp/layer-websrv-with-ssh 
+< 91d0eef1225d        15 hours ago        /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+< 7a3126a11212        15 hours ago        /bin/sh -c apt-get clean all                    0 B --- 
+> 6c0125964a07        2 minutes ago       /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B > > 
+> dacc0b7a474c        2 minutes ago       /bin/sh -c apt-get clean all                    0 B > > 
+> 9cf1f9b10602        2 minutes ago       /bin/sh -c apt-get install -y openssh-server    46.69 MB
+```
+
+As we can see the layers:
+* The original image is identical for the two containers (debian)
+* The update of the OS and the installation of apache
+
+
+What changes is:
+* The additional installation layer of the openssh server
+* The clean up of apt rep (apt-get clean all)
+
+
+Wow the clean up (apt-get clean all) is present in 2 container why it does not reutilise the same layer !! The reuse of the layers is done only if they are declared in the same order !!! indeed the system can not guarantee that the operation is identical at the level of the file system ONLY if the previous operations are the same.
+
+
+If we take the present case of the clean up of the packs, the operation is not the same:
+* layer 7a3126a11212 (srvweb-demo): delete update files download in /var/cache/.../*.deb
+* the layer dacc0b7a474c (websrv-with-ssh): delete the same files + those of openssh so this is not the same operation!
+
+
+This layer system is in fact the unionfs system which makes it possible to define the layered system system.
+
+
+It is sometimes used the term burn the layers of a container because they are engraved but modifiable during use, thanks to the writeable layer on the top. There is a lot of instruction to create a docker. See the following link on the reference site.
+
+
+Here is a short list:
+* Execution of a command (RUN, example apt-get install ....)
+* Adding a file or directory (ADD)
+* Definition of environment variables (ENV)
+
+
+Source :
+* docker layer
+* Understanding Docker
+* layering of docker images
+
+# Use of dockers
+
+## Network
+This section is still being improved, all possible perspectives with docker were not annalised.
+
+Realization of a forward port from the host machine to the container:
+```
+$ docker run -it -p 8080:80 srvweb-demo
+root@1385d905ecf8:/# /etc/init.d/apache2 start 
+[....] 
+Starting web server: apache2AH00558: apache2: 
+Could not reliably determine the server's fully qualified domain name, using 172.17.0.2. 
+Set the 'ServerName' directive globally to suppress this message . 
+ok  
+
+root@1385d905ecf8:/# netstat -lntp 
+Active Internet connections (only servers)
+Proto  tcp6
+Recv-Q Send-Q  0
+Local Address   0 :::80         
+Foreign Address      :::*    
+State       LISTEN  -
+PID/Program name 
+
+root@1385d905ecf8:/# 
+
+HOST 
+$ sudo netstat -lntp | grep 8080 
+tcp6       0      0 :::8080                 :::*                    LISTEN      12207/docker-proxy
+```
+
+
+The page is therefore available if we take a browser: http://127.0.0.1:8080
+
+
+It is possible to start the same image but to perform a different port forwarding so we have the same container / application available on 2 port distint. If there were mutexes or other limitations specific to the application he lives in a different eco-system.
+```
+$ docker run -it -p 8082:80 srvweb-demo 
+root@c5a07205dcc5:/# /etc/init.d/apache2 start 
+[....] 
+Starting web server: apache2AH00558: apache2: 
+Could not reliably determine the server's fully qualified domain name, using 172.17.0.3. 
+Set the 'ServerName' directive globally to suppress this message . 
+ok  
+root@c5a07205dcc5:/# netstat -lntp 
+Active Internet connections (only servers) 
+Proto tcp6  
+Recv-Q Send-Q  0
+Local Address     0 :::80     
+Foreign Address     :::*      
+State        LISTEN
+PID/Program name  -               
+
+HOST 
+$ sudo netstat -lntp | egrep '8080|8082' 
+tcp6       0      0 :::8080                 :::*                    LISTEN      12207/docker-proxy 
+tcp6       0      0 :::8082                 :::*                    LISTEN      14668/docker-proxy
+```
+
+## Using data in a container
+The whole layer systems is good but how does my system live in a container? Is it possible to have a container that keeps the data?
+
+
+With the present information it is not conceivable to have a database or a web page that keeps information via the upload of files or other ...
+
+
+Actually with the information provided so far the use of docker apart test one shot does not really seem possible. For the database question, of course, it is possible to burn a layer with the BD data and imagine that at the next reboot the data will be reset.
+
+
+### MountBind
+In order to solve this problem it is possible to make mount binds of a host directory on container. Just like for the definition of the port foward this is a parameter during the initialization of container.
+```
+$ docker run -it -p 8082:80 -v /data/html:/var/www/html/  srvweb-demo 
+root@e52e7386a2c6:/# ls -l /var/www/html/ 
+total 0 
+
+HOST 
+$ echo "super page" > /data/html/index.html 
+HOST 
+$ echo "file created by user" > /data/html/userfile.html 
+HOST 
+$ sudo chown userName /data/html/userfile.html 
+
+root@e52e7386a2c6:/# ls -l /var/www/html/ 
+total 8 
+-rw-r--r-- 1 root root 19 Nov 22 15:20 index.html 
+-rw-r--r-- 1 1000 root 21 Nov 22 15:20 userfile.html
+```
+
+As the UID 1000 is not defined in the container / etc / passwd the container can not make the association, this is important especially if there is manipulation of the files on the host AND in the container! In this situation if I stop and resume the container the data remains:
+```
+root@e52e7386a2c6:/# exit 
+HOST 
+$ docker run -it -p 8080:80 -v /data/html:/var/www/html/  srvweb-demo 
+root@c19bb2526dd2:/# ls -l /var/www/html/ 
+total 8 
+-rw-r--r-- 1 root root 19 Nov 22 15:20 index.html 
+-rw-r--r-- 1 1000 root 21 Nov 22 15:20 userfile.html
+```
+
+### Assign a name to the docker == a layer
+When I started my container from the beginning we saw the "hostname" change constantly:
+
+* root@085ad9165f9e:/#
+* root@1385d905ecf8:/#
+* root@4a9646057695:/#
+
+
+This number corresponds to the layer Writable of the docker
+
+
+It is possible to assign a layer to the execution so that it is always the same writeable layer that is used. Let's see in reality: D. i'm going to do 2 operation set a hostname to the machine with the -h option and set a layer name with --name.
+```
+HOST 
+$ docker run -it -p 8080:80 -h site_web_corpo -v /data/html:/var/www/html/ --name site_web_corpo  srvweb-demo 
+root@site_web_corpo:/# ls /var/www/html/ index.html  userfile.html 
+root@site_web_corpo:/# vi /root/withLayerName 
+root@site_web_corpo:/# exit $ docker run -it -p 8080:80 -h site_web_corpo -v /data/html:/var/www/html/ --name site_web_corpo  srvweb-demo 
+Error response from daemon: Conflict. The name "site_web_corpo" is already in use by container cf82d7eb0233. You have to remove (or rename) that container to be able to reuse that name.
+```
+
+I have an error ... because by default when using the docker run command it creates a new instance, in our case we already have the upper layer so we must restart the instance.
+
+With the docker ps command and docker ps -l we can visualize the dockers with the states
+```
+HOST 
+$ docker ps -a
+CONTAINER ID        IMAGE                                      COMMAND                  CREATED             STATUS                      PORTS                    NAMES 
+cf82d7eb0233        srvweb-demo                                "/bin/bash"              3 minutes ago       Exited (0) 2 minutes ago                             site_web_corpo 
+c19bb2526dd2        srvweb-demo                                "/bin/bash"              25 minutes ago      Exited (0) 6 minutes ago                             fervent_leakey 
+[....] 
+
+HOST 
+$ docker ps -a -l 
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS                     PORTS               NAMES 
+cf82d7eb0233        srvweb-demo         "/bin/bash"         3 minutes ago       Exited (0) 2 minutes ago                       site_web_corpo
+```
+
+So I restart the container and I attach myself to it
+
+```
+HOST 
+$ docker start site_web_corpo site_web_corpo 
+
+HOST 
+$ docker attach site_web_corpo 
+root@site_web_corpo:/# ls /root/ 
+total 4 
+-rw-r--r-- 1 root root 23 Nov 22 15:46 withLayerName 
+
+root@site_web_corpo:/# ls -l /var/www/html/ 
+total 8 
+-rw-r--r-- 1 root root 19 Nov 22 15:20 index.html 
+-rw-r--r-- 1 1000 root 21 Nov 22 15:20 userfile.html
+```
+
+We note that my file is always present, so it is possible to start multiple container with the same image however it is necessary that the layer writable is unique per container, this is the Linux system that has temporary / lock files, ... If we had two containers with the same layer, the behavior would be strange.
+
+
+### Burn a layer (adding a layer)
+If we have several containers, so several instances and we see a problem that needs to be modified, of course the ideal is to modify the DockerFile file and rebuild the image so that anyone using this container can benefit from this change. In reality it is sometimes important to apply a modification "quickly" or simply to be able to manipulate the layers because it can be done: D.
+
+
+Visualize the state of the layers of the image srvweb-demo
+```
+HOST 
+$ docker history srvweb-demo 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+542b4dd368a0        About an hour ago   /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+936cceddf353        About an hour ago   /bin/sh -c apt-get clean all                    0 B 
+e659a06a5110        About an hour ago   /bin/sh -c apt-get update &&     apt-get inst   157.6 MB
+6101357e0af2        About an hour ago   /bin/sh -c #(nop) MAINTAINER Perret Paul "t     0 B 
+140e18016122        3 weeks ago         /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B
+e1d661133e76        3 weeks ago         /bin/sh -c #(nop) LABEL License=GPLv2           0 B 
+eb36000ea36d        3 weeks ago         /bin/sh -c #(nop) LABEL Vendor=Debian           0 B 
+8ba1bb348f85        3 weeks ago         /bin/sh -c #(nop) ADD file:5222370b044ddd1aef   275.6 MB 
+ad97cee03005        3 weeks ago         /bin/sh -c #(nop) MAINTAINER Nickcis <ncis20@   0 B
+```
+
+We have an instance of the container in execution
+
+```
+HOTE 
+$ docker ps  
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                    NAMES  
+cf82d7eb0233        srvweb-demo         "/bin/bash"         31 minutes ago      Up 25 minutes       0.0.0.0:8080->80/tcp     site_web_corpo
+```
+
+Adding a ssl certificate:
+```
+root@site_web_corpo:/etc/apache2# mkdir ssl 
+root@site_web_corpo:/etc/apache2# cd 
+root@site_web_corpo:~# openssl req -new -newkey rsa:2048 -x509 -out cert.crt -keyout cert.key -nodes -days 365 
+root@site_web_corpo:~# ls -ltr 
+total 12 
+-rw-r--r-- 1 root root   23 Nov 22 15:46 withLayerName
+-rw-r--r-- 1 root root 1704 Nov 22 16:09 cert.key
+-rw-r--r-- 1 root root 1342 Nov 22 16:09 cert.crt 
+root@site_web_corpo:~# cp cert.crt cert.key /etc/apache2/ssl/
+```
+
+Now I burn the new layer with a significant message:
+* -m: the message (as svn)
+* websitewebcorpo: the current container
+* srvweb-demo: here I overwrite the one in use but I could also create a new one
+
+### command :
+
+    HOST 
+    $ docker commit -m "Ajout des certificat SSL " site_web_corpo srvweb-demo
+
+If we look at the layers in use:
+```
+$ docker history srvweb-demo 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+47503d9436b0        7 seconds ago       /bin/bash                                       8.031 kB            Ajout des certificat SSL 
+542b4dd368a0        About an hour ago   /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+936cceddf353        About an hour ago   /bin/sh -c apt-get clean all                    0 B 
+e659a06a5110        About an hour ago   /bin/sh -c apt-get update &&     apt-get inst   157.6 MB 
+6101357e0af2        About an hour ago   /bin/sh -c #(nop) MAINTAINER Perret Paul "t     0 B 
+140e18016122        3 weeks ago         /bin/sh -c #(nop) CMD ["/bin/bash"]             0 B 
+e1d661133e76        3 weeks ago         /bin/sh -c #(nop) LABEL License=GPLv2           0 B 
+eb36000ea36d        3 weeks ago         /bin/sh -c #(nop) LABEL Vendor=Debian           0 B 
+8ba1bb348f85        3 weeks ago         /bin/sh -c #(nop) ADD file:5222370b044ddd1aef   275.6 MB 
+ad97cee03005        3 weeks ago         /bin/sh -c #(nop) MAINTAINER Nickcis <ncis20@   0 B
+```
+
+The layer including the addition of the certificate is present, so if I start a new instance of srvweb-demo, without using the layer sitewebcorpo, I always see my files
+
+```
+HOST 
+$ docker run -it -p 8080:80 -v /data/html:/var/www/html/   srvweb-demo 
+root@696ac9f60763:/# ls /etc/apache2/ssl/ 
+cert.crt  cert.key
+```
+
+The concept is very great especially combine with docker diff that allows me to view before the commit differences here is an example:
+```
+root@696ac9f60763:/# touch /tmp/toto 
+root@696ac9f60763:/# rm /etc/apache2/ssl/cert.key 
+
+HOST 
+$ docker ps 
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                    NAMES 
+696ac9f60763        srvweb-demo         "/bin/bash"         18 minutes ago      Up 17 minutes       0.0.0.0:8080->80/tcp     dreamy_hugle 
+
+HOST 
+$ docker diff dreamy_hugle C /etc C /etc/apache2 C /etc/apache2/ssl D /etc/apache2/ssl/cert.key C /tmp A /tmp/toto 
+$ docker commit -m "Mise a jour certificat  " dreamy_hugle srvweb-demo 
+$ docker history srvweb-demo 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+87f410c60922        4 seconds ago       /bin/bash                                       0 B                 Mise a jour certificat 
+47503d9436b0        24 minutes ago      /bin/bash                                       8.031 kB            Ajout des certificat SSL 
+542b4dd368a0        About an hour ago   /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B
+```
+
+If, as in this case, there is a problem that the schedule operation does not match what needs to be in place ... it is possible to do a revert. I will go back to the layer of the installation of the original certificate.
+
+```
+root@696ac9f60763:/# exit 
+
+HOST 
+$ docker history srvweb-demo 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+87f410c60922        3 minutes ago       /bin/bash                                       0 B                 Mise a jour certificat 
+47503d9436b0        28 minutes ago      /bin/bash                                       8.031 kB            Ajout des certificat SSL 
+542b4dd368a0        2 hours ago         /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+936cceddf353        2 hours ago         /bin/sh -c apt-get clean all                    0 B 
+
+HOST 
+$ docker tag 47503d9436b0 srvweb-demo 
+Error response from daemon: Conflict: Tag srvweb-demo:latest is already set to image 87f410c60922, if you want to replace it, please use -f option 
+
+HOST 
+$ docker tag -f 47503d9436b0 srvweb-demo 
+
+HOST 
+$ docker history srvweb-demo 
+IMAGE               CREATED             CREATED BY                                      SIZE                COMMENT 
+47503d9436b0        29 minutes ago      /bin/bash                                       8.031 kB            Ajout des certificat SSL 
+542b4dd368a0        2 hours ago         /bin/sh -c #(nop) EXPOSE 80/tcp                 0 B 
+936cceddf353        2 hours ago         /bin/sh -c apt-get clean all                    0 B 
+
+HOTE $ docker run -it -p 8080:80 -v /data/html:/var/www/html/   srvweb-demo 
+root@4c5d65cde366:/# ls /etc/apache2/ssl/ 
+cert.crt  cert.key
+```
+
+We are not obliged to overwrite the original image we can also use the TAG system, add: Namedutag, the example below create the image srvweb-demo with the tag v2
+```
+HOST 
+$ docker ps 
+CONTAINER ID        IMAGE               COMMAND             CREATED             STATUS              PORTS                    NAMES 
+4c5d65cde366        srvweb-demo         "/bin/bash"         4 minutes ago       Up 4 minutes        0.0.0.0:8080->80/tcp     focused_chandrasekhar 
+
+HOST 
+$ docker commit -m "update version configue " focused_chandrasekhar srvweb-demo:v2 ad7710c059e99fcaf4b99c235f58ee8b8d6ce31c605d900ab9b9422086c20522 
+
+HOST 
+$ docker images | grep  srvweb srvweb-demo                     
+v2                  ad7710c059e9        13 seconds ago      433.2 MB srvweb-demo                     
+latest              47503d9436b0        34 minutes ago      433.2 MB
+```
+We can see that as snapshots ... The use of layers gives a lot of possibilities, it must be used.
+Source: layering-of-docker-images
+
+### Service definition at bootup
+Since the beginning of the exercise each time I started a container it used the default command is / bin / bash.
+
+
+Now let's see how to start the services, as we have seen the entire container is not initialize in the same way as a complete Linux system, we saw that the PID 1 is not / bin / init but the process wanted. It would therefore be possible to start only apache for example or only ssh. What I have often seen people use is supervisor to do the service startup. Here is an example of the instructions:
+
+```
+# use Supervisor  to start services  
+RUN apt-get install -y  supervisor 
+COPY conf/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+EXPOSE 22 
+CMD ["/usr/bin/supervisord"]
+```
+
+### And the contents of the configuration file /etc/supervisor/conf.d/supervisord.conf
+```
+[supervisord] nodaemon=true 
+[program:sshd] command=/usr/sbin/sshd -D 
+[program:apache2] command=/bin/bash -c "source /etc/apache2/envvars && exec /usr/sbin/apache2 -DFOREGROUND"
+```
+Why put in forground because it is the supervisord process that will manage the setting in the background, the system allows several instructions such as automatic restart if it crashes, .... For the moment the lack of practical experience with this system do not allow me to comment on the benefits is problem.
+The life cycle with Docker
+ 
+
+

@@ -1,0 +1,321 @@
+# Process management.
+##  Prioritization
+### Priority scheduling process management (nice)
+nice is a command available on the UNIX operating system and other compatible systems such as Linux. This command points directly to an entry point of the kernel with the same name, it allows to change the priority level of a given process. The highest priority is a level of -20, while the lowest is +19. The default priority level of a process is that of its parent process, and is usually zero.
+
+
+Nice is useful whenever multiple processes require more CPU power than this one can provide. In this case, the process with the highest priority will benefit from more power from the CPU. On the other hand, if the CPU is not used at 100%, then a process of low priority can still benefit from a power of up to 99%. Only a root user can assign high priority levels.
+
+
+The mechanism for distributing the CPU load according to the priority of the processes is performed by the task scheduler. The implemented algorithm may vary from one implementation to another, so the percentages of CPUs allocated between two processes sharing 100% of the machine time can be very variable between various versions of Unix, Linux or other BSD.
+
+
+The renice command is used to change the priority level of a running process.
+
+
+Example of using nice when launching the application
+
+#### nice use example
+
+      admuser@srv01:~$ nice -n +19 free -m
+      
+      
+If the application is already running and you want to reduce the priority you will use the process PID and use renice.
+
+#### Changing a process in progress
+```
+admuser@srv01:~$ ps aux | grep cron
+root       746  0.0  0.1   2620   808 ?        Ss   Jul07   0:00 cron
+admuser@srv01:~$ renice -n +19 746
+renice: failed to set priority for 746 (process ID): Operation not permitted
+# Of course you need to have the right for the process
+admuser@srv01:~$ sudo renice -n +19 746
+[sudo] password for admuser: 
+746 (process ID) old priority 0, new priority 19
+```
+
+## Priority management of disk access scheduling (ionice)
+It is also possible to define a priority for disk access:
+
+
+Ionice This program sets or reads the priority and class of input / output commands for a program. If there is no parameter or if only -p is given, ionice will request the class and the current I / O scheduling priority for that process. A process can belong to one of these three scheduling classes:
+
+
+Idle A program running with an idle input / output priority will get time to access the disk when no other program has requested I / O on the disks in a given time period. The impact of processes with an idle scheduling class on normal system activity should be zero. This process scheduling class does not take precedence as a parameter. This scheduling class is allowed for a single user (since Linux 2.6.25).
+
+
+Best effort This is the default scheduling class for each process that did not request a specific input / output priority. The programs inherit the processor's "nice" settings for I / O priorities. This class takes a parameter priority in the range 0-7, where the lowest number will be a higher priority. Ongoing programs with the same "best effort" priority are served one after the other. A process that did not request I / O priority uses scheduling class none, but the I / O scheduler will treat such a process as if it were of the best effort class. The priority in the best effort class will be dynamically derived from the CPU courtesy level of the I / O process priority (equal to (politeness_cpu + 20) / 5).
+
+
+Real time The RT scheduling class gives first access to the disk without worrying about other executions on the system. As a result, the RT class must be used carefully because it can "starve" other processes. Like the "best effort" class, 8 priority levels are defined denoting the time period that a given process will receive in each scheduling window. This scheduling class is not allowed for a single user (that is, non-superuser).
+
+
+## CPU limit management for a process (cpulimit)
+There is another system for prioritizing processes or rather limiting a process in terms of its use of CPUs. with the cpulimit command it is possible to tell a process to use only 50% of the CPU. To date (Q3 2014) I have never used this feature. Here is an example of use:
+```
+# Start a process
+# Start the bigloop process with max 40% CPU
+admuser@srv01:~$ cpulimit --exe bigloop --limit 40
+admuser@srv01:~$ cpulimit --exe /usr/local/bin/bigloop --limit 40 
+ 
+# Limitation of a process in progress
+# process with pid 2960 cpu limitation at 200%
+admuser@srv01:~$ cpulimit --pid 2960 --limit 200 
+```
+
+It is important to understand the percentage used, if you have 1 CPU the system uses in 0% and 100%, if you have 4 CPU the system can use between 0% and 400% so in the example number 2 the process can use up to half the power of processes.
+
+
+http://cpulimit.sourceforge.net/
+
+
+## Define a process in background (&, nohup)
+We began to discover what the processes were in the previous chapter. We now know how to list them, sort them, filter them and finally how to kill them.
+
+
+Here, I propose to go further and discover the execution in the background. At first, the console has something frustrating: it seems that we can launch only one program at a time per console. But that's totally wrong!
+
+
+... But you still have to know how to run programs in the background.
+
+
+There are a number of more or less sophisticated techniques. It is recommended to know them because, sometimes, one wishes to do everything within one and the same console.
+
+
+### "&" & nohup : start a process in the background
+When you are about to start a long operation, such as a large copy of files for example, you may not want to wait patiently for the command to run before you can do anything else.
+
+
+Of course, you can open another console, you say. There are cases, however, where you have access to only one console, or just do not want to open another (lazy, you know? ;-).
+
+
+Unlike appearances, several programs can run at the same time within the same console. It's not because we can not display multiple windows like in a graphical environment that we are stuck on one program at a time! It is still necessary to know the techniques which make it possible to launch a command in the background ...
+
+
+#### & : start a process in the backgroundThe first technique I want you to discover is very simple: it consists of adding the small symbol & at the end of the command you want to send in the background.
+Take for example the command cp which allows to copy files.I propose to copy a large video file (which usually takes time), like this:
+
+### example background process
+
+    $ cp video.avi copie_video.avi &
+    [1] 16504
+    
+    
+We send you two pieces of information.
+* [1] :this is the process number in the background in this console. Since this is the first process we send in the background, it takes the number 1.
+* 16504 : this is the general identification number of the process ( PID ). This information allows you to kill the process with kill if necessary.Now, you may not see anything, but the process is really turning into a "bottom-line".
+
+
+If you try to do the same thing with other commands, for example on a find,you may be surprised: the messages returned by the command are still displayed in the console! You can certainly write some text and run other commands during this time (try), but it's a bit frustrating to see these messages appear in the console!Fortunately, you now know how to redirect the output to avoid being bothered:
+
+
+### execution in background and redirection of the display
+
+    $ find / -name "*log" > sortiefind &
+    [1] 18191
+
+Results will now be written to the file sortiefindinstead of being displayed in the console. In addition, the command runs in the background and does not bother us anymore.
+
+
+Note that to be sure of not being disturbed at all, you will also need to redirect errors (for example with 2>&1)However, there is still a problem: the process is "attached" to your console. If you close the console on which you are, the process will be killed and will not execute until the end.
+
+
+#### nohup : detach the process from the console
+The option &, although quite commonly used, with this not negligible defect: the process remains attached to the console, which means that if the console is closed or the user disconnects, the process will be automatically stopped.
+
+
+If we want the process to continue, we have to launch the command via nohup.It is used like this:
+$$$ Example use of nohup
+```
+nohup commande
+ 
+# For example, here's what it gives if you run the copy via a nohup:
+ 
+$ nohup cp video.avi copie_video.avi
+nohup: ajout à la sortie de `nohup.out'
+```
+
+The output of the command is redirected to a file by default nohup.out. No message is likely to appear in the console.
+
+
+On the other hand, the command is now immune to closing the console. It will continue to work no matter what (unless you send it a kill, ).
+
+
+### Ctrl + Z, jobs, bg & fg : go through a process in the background
+Now let's see the problem differently: you started the command without thinking of adding a small & at the end. Unfortunately, the order takes much longer to run than you expected. Are you doomed to wait until it's over to get your hands on the command prompt? Of course not !There is a series of commands and shortcuts that you absolutely must know! We will study them one by one right now.
+
+#### Ctrl + Z : pause program execution
+Take the case of our big copy of files. This time, I guess you launched it without the little symbol & :
+
+### command without & for demonstration of CTRL + Z
+
+    $ cp video.avi copie_video.avi
+    
+If you do not have a large file on hand to do the test, you can also do a top.
+
+
+Type now Ctrl + Z during program execution. It will stop and you will immediately regain control of the command prompt.
+
+### Using CTRL + Z
+
+    [1]+  Stopped                 top
+     admuser@formation:~$
+     
+     
+You will notice that we have several informations: the process number in the background (here [1]), its state (Stopped) and the name of the command that started this process.The process is now in a state of pause. It does not run but remains in memory.
+
+#### bg : pass the process in the background
+Now that the process is "paused" and we have retrieved the command prompt, type:
+
+### command bg
+
+    $ bg
+    [1]+ top &
+    
+    
+That's all, no need for a parameter.
+
+
+What does it do? This commands the process to resume, but this time in the background. It will continue to run again, but in the background.
+
+
+In summary, if you have launched a command by mistake in the foreground and want to retrieve the command prompt, you will have to do the following:
+* Ctrl + Z : to pause the program and retrieve the command prompt;
+* bg :to keep the process running but in the background
+
+
+You can send as many background processes as you want within one console:
+* either throwing them directly in the background with a &at the end of the command;
+* either using the technique of Ctrl + Z followed by bg you just learned.
+
+How can I now know which processes are running in the background? You could, of course, resort to the command ps, but this one will give you all the processes. It's a little too much.
+
+
+Fortunately, there is a command that lists only the processes that run in the background within the same console : jobs.
+
+### command jobs
+
+      $ jobs
+      [1]-  Stopped                 top
+      [2]+  Stopped                 find / -name "*log*" > sortiefind 2>&1
+
+Again, you have the number of the process that runs in the background (not to be confused with the PID), its status and name.
+
+#### fg : resume a process in the foreground
+The command fg returns a process to the foreground.
+
+### command fg
+
+    $ fg
+
+If you have only one process listed in the jobs, it is this process that will be put back in the foreground.
+
+
+If, like me earlier, you have several processes in the background, you will have to specify which one you want to recover. For example, here's how to resume find who was the job n° 2 :
+
+### fg command with arg
+
+    $ fg %2
+
+
+Summary of the possible states of the processes
+
+
+I think a scheme is needed now. In the following figure, I summarize everything we have seen so far, except for nohup which is a command a little apart.
+
+
+Let's explain this diagram a bit!
+
+
+By default, a process is started in the state runningin the foreground. We can stop it with the combination Ctrl + C, in which case it will be destroyed.
+
+
+But we can also send it in the background. If we run it from the start with a &, he will be in the state runningin the background. If we choose to do Ctrl + Z, it will go to state Stopped in the background. It will be necessary to type bg to make it go back to the state running background.
+
+
+Finally, the command fg returns a process from the background to the foreground.
+
+
+Take five minutes to properly analyze this diagram and make sure you understand the basics of this chapter, it's really important. It sums up just about everything you need to know. It's just missing nohup that I've set apart as I told you.
+
+
+## Signal Management
+Signals are mechanisms for manipulating and communicating with processes in Linux. The subject of signals is vast; we will deal here with some of the signals and techniques used to control processes.
+
+
+A signal is a special message sent to a process. The signals are asynchronous; when a process receives a signal, it processes it immediately, without even terminating the current function or line of code. There are several dozen different signals, each with different meanings. Each type of signal is characterized by its signal number, but within programs, it is often referred to by a name. On Linux, they are defined in /usr/include/bits/signum.h (you should not include this file directly in your programs, use it instead).
+
+
+When a process receives a signal, it can act in different ways, depending on the action recorded for the signal. For each signal, there is a default action, which determines what happens to the process if the program does not specify other behavior. For most signals, the program may indicate another behavior - either ignore the signal or call a signal handler, a function that processes the signal. If a signal handler is used, the running program is suspended, the handler is executed, and when it is finished, the program resumes.
+
+
+The Linux system sends signals to processes in response to specific conditions. For example, SIGBUS (Bus Error), SIGSEGV (Segmentation Error), and SIGFPE (Floating Point Exception) can be sent to a program that is trying to perform an unauthorized action. The default action for these three signals is to complete the process and produce a core file.
+
+
+A process can also send signals to another process. A common use of this mechanism is to terminate another process by sending it a SIGTERM or SIGKILL signal (What is the difference? The SIGTERM signal causes the process to terminate, the process may ignore the request by hiding or ignoring the signal. SIGKILL signal always kills the process immediately because it is impossible to hide or ignore SIGKILL.). Another common use is to send a command to a running program. Two "user-defined" signals are reserved for this purpose: SIGUSR1 and SIGUSR2. The SIGHUP signal is also sometimes used for this purpose, usually to wake up an idle program or to replay the configuration file.
+
+
+## The different signals
+For a list of signals, see the signal manual page (section 7):
+ ```
+ $ man 7 signal
+ ...
+ Signal     Value     Action   Comment
+ ---------------------------------------------------------------------
+ SIGHUP        1       Term    Disconnection detected on the control terminal or death of the control process.
+ SIGINT        2       Term    Interruption from the keyboard.
+ SIGQUIT       3       Core    "Quit" request from the keyboard.
+ SIGILL        4       Core    Illegal instruction.
+ SIGABRT       6       Core    Stop signal since abort (3).
+ SIGFPE        8       Core    Floating point math error.
+ SIGKILL       9       Term    Signal « KILL ».
+ SIGSEGV      11       Core    Invalid memory reference.
+ SIGPIPE      13       Term    Writing in a tube without a reader.
+ SIGALRM      14       Term    Alarm delay (2) elapsed.
+ SIGTERM      15       Term    End signal.
+ SIGUSR1   30,10,16    Term    User signal 1.
+ SIGUSR2   31,12,17    Term    User signal 2.
+ SIGCHLD   20,17,18    Ign     Son stopped or finished.
+ SIGCONT   19,18,25    Cont    Continue if stopped.
+ SIGSTOP   17,19,23    Stop    Stop the process.
+ SIGTSTP   18,20,24    Stop    Stop summoned since tty.
+ SIGTTIN   21,21,26    Stop    Reading on tty in the background.
+ SIGTTOU   22,22,27    Stop    Writing on tty in the background.
+```
+
+The best known signals are the following three:
+* SIGHUP (signal # 1): For many network services, receiving signal # 1 tells it to read its configuration. For example, this allows the apache process (web server) to re-read its configuration without having to stop and restart the process.
+* SIGKILL (signal n ° 9): ends a process (sudden stop). Useful when the SIGTERM does not work (planted process).
+* SIGTERM (signal # 15): asks the process to stop (clean shutdown).
+
+## Send signals (kill)
+The kill command sends a signal to the process. syntax:
+
+### syntax kill
+
+    $ kill -<numéro du signal ou nom du signal> <PID du processus>
+
+
+Example of using KILL:
+
+### exemple utilisation de KILL
+    $ kill -1 12345
+    $ kill -SIGTERM 12345
+
+You can know the process PID using the ps command, or use the pidof command
+
+
+### example search process and send signal 15
+
+     $ pidof cupsd
+    2571
+    $ kill -15 2571
+
+The killall command is used to specify the name of the process rather than its PID, and will send the signal to all processes with that name. example:
+
+### example kill all
+
+     $ xeyes & ; xeyes & ; xeyes &
+     $ killall xeyes
+ 
+Used without an option, the kill and killall commands send signal # 15 (clean shutdown).

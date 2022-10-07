@@ -1,0 +1,208 @@
+# User creation
+## Creating a user
+Let's start with the creation of a user, keep in mind the 2 types of users (service and regular). The original command is useradd the latter to the advantage of being available on all systems. When invoked without the -D option, the useradd command creates a new user account that uses the values specified on the command line and system defaults. Depending on the command line options, the useradd command will update the system files, it will be able to create the home directory and copy the initial files. This command also creates a group with the same name as the user and this group will be the primary group of the user. Here is an example of use of the command with the result following the creation:
+
+### Exemple création d'utilisateur
+```
+# creation of the user
+admuser@srv01:~$ sudo useradd bob
+ 
+# Visualization of this user
+admuser@srv01:~$ id bob
+uid=1001(bob) gid=1001(bob) groups=1001(bob)
+admuser@srv01:~$ getent passwd bob
+bob:x:1001:1001::/home/bob:/bin/sh
+admuser@srv01:~$ ls /home/bob
+ls: cannot access /home/bob: No such file or directory
+```
+
+As you can see the user thomas was created as a regular user so the system took the next UID available, being under Ubuntu the latter is 1001 because I already have the user admitting with the UID 1000. A group was automatically created with the name of the user the latter too is a regular group because the GID is greater than 1000. The user to a shell / bin / sh and his home directory is / home / thomas, however the command did NOT create this directory, we can see it in line 9. Last point the user has no partner password.
+
+
+The configuration file for the useradd command is / etc / default / useradd, and all the parameters available to the command are as always available in the man page: man useradd
+
+
+## Adduser command
+As mentioned useradd is the original command RedHat and Ubuntu / Debian offers a more "user-friendly" interface, the name of the command is adduser, back this command all uses the same useradd. Just like with the useradd command, adduser will choose the first identifier (UID) in the domain defined for normal users in the configuration file. The UID can be forced with the --uid option.
+
+
+The command uses the configuration file: /etc/adduser.conf, if you opened the previous configuration file for useradd you will find that there is much more information in adduser.
+
+
+By default, each user of a Debian GNU / Linux system is assigned a group with its own name. User groups make it easier to manage the directories that are writable by a group: the appropriate users are placed in the new group, the SGID bit of the directory is set, and we make sure that all users have a form mask. 002. If this option is disabled by setting USERGROUPS to no, all user group IDs will be USERS_GID. The primary user group can also be forced into the command line with the --gid or --ingroup option for the numeric ID and group name respectively. In addition, users can be added to one or more groups defined in adduser.conf, by setting ADD_EXTRA_GROUPS to 1 in adduser.conf, using the --add_extra_groups command line option.
+
+
+If the /usr/local/sbin/adduser.local file exists, it is executed after the user has been configured to perform system-specific operations. The parameters passed to adduser.local are:
+
+      username uid gid personal_directory
+
+
+Demonstration:
+
+### example use adduser
+```
+# Creation
+admuser@srv01:~$ sudo adduser thom
+Adding user `thom' ...
+Adding new group `thom' (1002) ...
+Adding new user `thom' (1002) with group `thom' ...
+Creating home directory `/home/thom' ...
+Copying files from `/etc/skel' ...
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+Changing the user information for thom
+Enter the new value, or press ENTER for the default
+        Full Name []: Thom
+        Room Number []: 
+        Work Phone []: 
+        Home Phone []: 
+        Other []: demo adduser
+Is the information correct? [Y/n] y
+ 
+# Visualization
+admuser@srv01:~$ id thom
+uid=1002(thom) gid=1002(thom) groups=1002(thom)
+admuser@srv01:~$ getent passwd thom
+thom:x:1002:1002:Thom,,,,demo adduser:/home/thom:/bin/bash
+admuser@srv01:~$ ls -la /home/thom/
+total 20
+drwxr-xr-x 2 thom thom 4096 Apr  9 13:05 .
+drwxr-xr-x 5 root root 4096 Apr  9 13:05 ..
+-rw-r--r-- 1 thom thom  220 Apr  9 13:05 .bash_logout
+-rw-r--r-- 1 thom thom 3486 Apr  9 13:05 .bashrc
+-rw-r--r-- 1 thom thom  675 Apr  9 13:05 .profile
+```
+
+The thom user is now created, as you can see adduser request more information than the other command. In addition to the additional information the command will create the directory of the user and will ask the administrator to set a password. This interactive mode can be inactive if you pass all the information required for the creation of the user as arguments. Just as when using useradd the system has created a group with the same name as the user.
+
+## Definition of the primary group
+You may not want to have this group proliferation associated with the user, if we look at the list of groups currently present you will find that there is the already existing group of users at the GID 100.
+
+### group users visualization
+```
+# List groups with the user filter
+admuser@srv01:~$ getent group | grep users
+users:x:100:
+```
+
+So we will associate our other user with this group as a primary group, this user will name bob.
+```
+admuser@srv01:~$ sudo adduser --gid 100 bob
+Adding user 'bob' ...
+Adding new user 'bob' (1003) with group 'users' ...
+Creating home directory '/home/bob' ...
+Copying files from '/etc/skel' ...
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+Changing the user information for bob
+Enter the new value, or press ENTER for the default
+        Full Name []: Bob Marley
+        Room Number []: 
+        Work Phone []: 
+        Home Phone []: 
+        Other []: chanteur
+Is the information correct? [Y/n] y
+ 
+# Visualization
+admuser@srv01:~$ id bob
+uid=1003(bob) gid=100(users) groups=100(users)
+ 
+admuser@srv01:~$ getent group | grep bob
+# no display so no bob group was created
+ 
+# we see that the primary group is users
+admuser@srv01:~$ ls -ld /home/bob/
+drwxr-xr-x 2 bob users 4096 Apr 12 09:40 /home/bob/
+admuser@srv01:~$ ls -la /home/bob/
+total 20
+drwxr-xr-x 2 bob  users 4096 Apr 12 09:40 .
+drwxr-xr-x 7 root root  4096 Apr 12 09:40 ..
+-rw-r--r-- 1 bob  users  220 Apr 12 09:40 .bash_logout
+-rw-r--r-- 1 bob  users 3486 Apr 12 09:40 .bashrc
+-rw-r--r-- 1 bob  users  675 Apr 12 09:40 .profile
+```
+
+As you can see the incremented UID but the primary group is not the name of the user but users, if you wanted all of your users to be a member of the users group, you would have to pass the parameter each time - gid users, This is annoying because it is likely that one day you forget this option, or that a new colleague does not pass this argument, because the procedure for creating users is not followed. When I presented the adduser command I mentioned that there is a configuration file named /etc/adduser.conf.
+
+
+Here is part of the contents of the configuration file:
+### adduser.conf primary group.
+
+``` 
+[[CUT OUTPUT]]
+ 
+# The USERGROUPS variable can be either "yes" or "no".  If "yes" each
+# created user will be given their own group to use as a default.  If
+# "no", each created user will be placed in the group whose gid is
+# USERS_GID (see below).
+USERGROUPS=yes
+ 
+# If USERGROUPS is "no", then USERS_GID should be the GID of the group
+# `users' (or the equivalent group) on your system.
+USERS_GID=100
+ 
+[[CUT OUTPUT]]
+```
+By modifying the USERGROUPS parameter with the value no, the variable USERS_GID will be used to assign the GID to the user to create new result no need to be vigilant for the creation of the users they will all be members of the group users by default. Of course it is still possible to pass the argument --gid this predominantly on the configuration file. The goal was to get you to have a look at this configuration file.
+
+
+example:
+### Create user after edit configuration adduser
+```
+admuser@srv01:~$ sudo adduser peter
+Adding user 'peter' ...
+Adding new user 'peter' (1004) with group 'users' ...
+Creating home directory '/home/peter' ...
+Copying files from '/etc/skel' ...
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+Changing the user information for peter
+Enter the new value, or press ENTER for the default
+        Full Name []: Peter Tosh         
+        Room Number []: 
+        Work Phone []: 
+        Home Phone []: 
+        Other []: Chanteur et Guitarist 
+Is the information correct? [Y/n] y
+admuser@srv01:~$ id peter
+uid=1004(peter) gid=100(users) groups=100(users)
+```
+
+I invite you more than strongly to take a few seconds to read the man page of adduser, not all of the text but simply the available options this will allow you to see the options available to you for parameterizing the user during this creation.
+
+
+## Defining copy files in the HomeDirectory directory
+As shown in the previous examples we have seen that the user's home directory is created when the user is created. As we see in line 5, you can see that the files come from files that are copied from the / etc / skel directory. This directory contains all the files by default, here are the files that make up the directory / etc / skel:
+* /etc/skel
+  * .bash_logout: bash configuration file, this file is called when the bash session is finished
+  * .bashrc: bash configuration file called when starting each bash process
+  * .profile: configuration file loaded during the first connection.
+
+## Creation of a user of type system.
+When creating other users we always create regular users, the majority of the time it is the type of user you will add to the system. On the other hand, at the end of knowledge we will see how to create users of type system, 99.99% is user is automatically created by the package system during the installation of software, on the other hand if the installation of the software is done in the hands with the source code it is likely that the creation of the service user is your responsibility ... During the presentation of users we saw the particularity of this type of user:
+
+* UID <= 499 (redhat) ou 999 (Ubuntu/Debian)
+* SHELL: / bin / false or / usr / sbin / nologin, at least a shell that does not allow interactive communication
+* Password: absent to avoid any possible connection.
+
+To realize the creation of this type of user we pass the --system parameter here is an example:
+
+### user system creation
+```
+# Creation
+admuser@srv01:~$ sudo adduser --system b3_srv_user
+Adding system user `b3_srv_user' (UID 106) ...
+Adding new user `b3_srv_user' (UID 106) with group `nogroup' ...
+Creating home directory `/home/b3_srv_user' ...
+ 
+# Validation / presentation of the user.
+admuser@srv01:~$ id b3_srv_user
+uid=106(b3_srv_user) gid=65534(nogroup) groups=65534(nogroup)
+admuser@srv01:~$ getent passwd b3_srv_user
+b3_srv_user:x:106:65534::/home/b3_srv_user:/bin/false
+```
+As we can see much less question, the association of the user with the group nogroup a command interpreter to / bin / false, a UID to 106 and no definition of password realized. So we have a service user.
+

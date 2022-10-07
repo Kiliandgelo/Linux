@@ -1,0 +1,231 @@
+# User Management
+## Defining Users and Groups in GNU / Linux
+* Definition of the user
+  * Service User (System Accounts) and Interactive or Regular User
+  * User visualization
+* Definition of the group
+  * Service Group and Regular Group
+  * Group visualization
+
+## Definition of the user
+It seems a bit odd to talk about user definition while we know what a computer user is, we will talk about the characteristics of a user under GNU / Linux. We will see that there are two types of user: service and interactive. Let's first look at what a user is a service or interactive user.
+
+
+A user to:
+* Required::
+  * a name: This username will be used to establish a connection for example and will be presented under this name to the other user including the administrator.
+  * an UID (the user's numeric identifier): This UNIQUE number to the user will be used by the system to represent the user.
+  * a GID (the numerical identifier of the group of the user): This number represents the primary group to which the user is associated, each user must have at least one primary group. When creating a new file, the latter will own the UID and, as the owner group, the primary group.
+  * a HomeDirectory (the home directory of the user): This home directory usually defined in the / home directory allows the user to store his files.
+  * a shell (shell): The shell shell is used when the user logs on. As seen during the Linux 101 session, it is possible to have several types of command interpreter such as zsh, tksh, csh, ... We will also see another type of command interpreter such as / bin / false, / usr / sbin / nologin, ...
+* Optional:
+  * a comment: A comment field is user to offer information about the user such as his real name, or other information.
+  * Secondary groups: It is possible to assign other groups to the user to assign rights.
+  * a password: Password assignment is possible but NOT mandatory.
+
+# Service User (System Accounts) and Interactive or Regular User
+We will see the difference between these two types of user although it is the set of properties defined above when difference is mainly in their function.
+* Interactive or regular user: this user is the typical user who will connect to the system with an interaction with the machine, he will establish a connection through a service whether it is SSH, a file sharing service, or any other service. The system will ask for it will use a commonly used authentication mode a password request.
+* Service user: this user is used to roll a service, if we take the case of the server ssh service (openSSH) when the software is started it is not the root user who rolls it but a user who less than right this limits the access that the process has. Moreover if there is a problem with the software, a security flaw the attacker can only use the accesses that the service has, it will not be administrator on the system. One of the peculiarities of this user type is that it does not have a password, this is not mandatory because there is no authentication that is not performed. In addition, the command interpreter (shell) is often an interpreter not usable in case of connection, so we find interpreters such as: / bin / false, / usr / sbin / nologin.
+
+
+In addition to being identifiable by the lack of password and by their particular shell, they often have a particular identification number UID. As there is often a difference between the Ubuntu / Debian distribution and RedHat.
+* Ubuntu / Debian :
+    * Service User: UID <= 999
+    * Interactive or regular user: UID> = 1000
+* RedHat :
+  * Service User: UID <= 499
+  * Interactive or regular user: UID> = 500
+
+But this is only a convention that I invite you to respect to make your life easier, and make life easier for your colleagues, unfortunately no guarantee is provided and sometimes you will find organizations that have users of service and interactive mixed
+
+## User visualization
+Bef
+ore starting to create and delete users see the users present on the system, this will allow us later to better create our users because we will have knowledge of those present, and we can validate effectively that our new users are well create .
+
+Let's start by viewing our user, you can use the id command that shows you the information about your user, you will have the user's name are UID, his primary group GID, as well as the secondary groups with their number. It is also possible to provide the id command with the name of another user:
+
+### command id
+```
+# View ID without arguments
+admuser@srv01:~$ id
+uid=1000(admuser) gid=1000(admuser) groups=1000(admuser),4(adm),24(cdrom),27(sudo),30(dip),46(plugdev),111(lpadmin),112(sambashare)
+ 
+# Visualization of the ID with argument
+admuser@srv01:~$ id sshd
+uid=105(sshd) gid=65534(nogroup) groups=65534(nogroup)
+```
+
+This is good, however to have the information on the user, we need to know the name of the latter more with the command id we do not have the information on the shell, the personal directory (homedirectory). The / etc / directory contains a file that can provide all of the information that is / etc / passwd. Here is an example of the file: 
+
+### file / etc / passwd
+```
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+bin:x:2:2:bin:/bin:/bin/sh
+sys:x:3:3:sys:/dev:/bin/sh
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/bin/sh
+man:x:6:12:man:/var/cache/man:/bin/sh
+lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+mail:x:8:8:mail:/var/mail:/bin/sh
+news:x:9:9:news:/var/spool/news:/bin/sh
+uucp:x:10:10:uucp:/var/spool/uucp:/bin/sh
+proxy:x:13:13:proxy:/bin:/bin/sh
+www-data:x:33:33:www-data:/var/www:/bin/sh
+backup:x:34:34:backup:/var/backups:/bin/sh
+list:x:38:38:Mailing List Manager:/var/list:/bin/sh
+irc:x:39:39:ircd:/var/run/ircd:/bin/sh
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
+nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
+libuuid:x:100:101::/var/lib/libuuid:/bin/sh
+syslog:x:101:103::/home/syslog:/bin/false
+messagebus:x:102:105::/var/run/dbus:/bin/false
+whoopsie:x:103:106::/nonexistent:/bin/false
+landscape:x:104:109::/var/lib/landscape:/bin/false
+sshd:x:105:65534::/var/run/sshd:/usr/sbin/nologin
+admuser:x:1000:1000:admuser,,,:/home/admuser:/bin/bash
+``` 
+
+As you can see this includes all the information mentioned at the beginning, if you look at the permissions of the file it is readable by everyone, this is mandatory. In the next workshop you will have the opportunity to see what happens if we change the permissions on this file.
+
+
+If you wish it is always possible to visualize the man page of this file with the command:
+
+      man 5 passwd
+
+It is important to pay attention when manual modification in this file although often the problem is correctable, if the error is realizing on your user "administrator", it is possible that it is very difficult to return on the file
+
+
+There is also another way to extract information from users, not by using the / etc / passwd file, but by using the getent command. Here is the result of the command
+
+### getent passwd
+
+```
+# extraction of users with getent
+admuser@srv01:~$ getent passwd
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/bin/sh
+bin:x:2:2:bin:/bin:/bin/sh
+sys:x:3:3:sys:/dev:/bin/sh
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/bin/sh
+man:x:6:12:man:/var/cache/man:/bin/sh
+lp:x:7:7:lp:/var/spool/lpd:/bin/sh
+mail:x:8:8:mail:/var/mail:/bin/sh
+news:x:9:9:news:/var/spool/news:/bin/sh
+uucp:x:10:10:uucp:/var/spool/uucp:/bin/sh
+proxy:x:13:13:proxy:/bin:/bin/sh
+www-data:x:33:33:www-data:/var/www:/bin/sh
+backup:x:34:34:backup:/var/backups:/bin/sh
+list:x:38:38:Mailing List Manager:/var/list:/bin/sh
+irc:x:39:39:ircd:/var/run/ircd:/bin/sh
+gnats:x:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/bin/sh
+nobody:x:65534:65534:nobody:/nonexistent:/bin/sh
+libuuid:x:100:101::/var/lib/libuuid:/bin/sh
+syslog:x:101:103::/home/syslog:/bin/false
+messagebus:x:102:105::/var/run/dbus:/bin/false
+whoopsie:x:103:106::/nonexistent:/bin/false
+landscape:x:104:109::/var/lib/landscape:/bin/false
+sshd:x:105:65534::/var/run/sshd:/usr/sbin/nologin
+admuser:x:1000:1000:admuser,,,:/home/admuser:/bin/bash
+```
+
+In our current system you see exactly the same information as the / etc / passwd file, however the advantage of the getent passwd command compared to viewing the file is that getent provides the set of users actually available on the system. If your server will look for information in an LDAP server such as Active Directory, OpenLdap, ... the available users will be displayed !!
+
+
+getent passwd can also take a user argument as this will return only the requested user's information.
+
+
+The GOOD practice is to use getent passwd when we want to have the information on the users this ensures us to have all the information
+
+## Definition of the group
+After seeing the user see groups this will allow us to manipulate users and groups at the same time for the rest of the lesson. All as for the users we find service groups and regular groups.
+
+
+A group to:
+* inevitably:
+  * a name: This name will be used primarily by users to reference this group.
+  * a GID: The identification number of the group, this number is unique
+* Optional:
+  * member users: A group might have no system accounts and Interactive or regular user
+
+## Service Group and Regular Group
+The concept is the same as for users we have groups with numbers that identifies their type. However this has the same problem as for users ie that this is a convention so nothing guarantees only the group of the correct type only because of the number. I repeat, however respected the standard do not be the administrator who did not respect this convention.
+
+* Ubuntu / Debian :
+  * Service Group: GID <= 999
+  * Regular group: GID> = 1000
+* RedHat :
+  * Service Group: GID <= 499
+  * Regular group: GID> = 500
+
+## Group visualization
+Before starting to create and delete groups we see the groups present on the system, this will allow us later to better create our group because we will have a knowledge of those present, moreover we will be able to validate effectively that our new groups are well created .
+
+
+Let's start by viewing the groups I belong to, you can use the id command to display information about your user and see the groups. We saw the id command previously.
+
+
+The / etc / group file contains all the groups present locally defined on the system, here is an example of content
+
+### example file /etc/group
+```
+root:x:0:
+daemon:x:1:
+bin:x:2:
+sys:x:3:
+adm:x:4:admuser
+tty:x:5:
+disk:x:6:
+lp:x:7:
+mail:x:8:
+news:x:9:
+uucp:x:10:
+man:x:12:
+proxy:x:13:
+kmem:x:15:
+dialout:x:20:
+fax:x:21:
+voice:x:22:
+cdrom:x:24:admuser
+floppy:x:25:
+tape:x:26:
+[[ CUT OUTPUT ]] 
+```
+If you wish it is always possible to visualize the man page of this file with the command:
+
+    man 5 group
+
+It is important to pay attention when manual modification in this file although often the problem is correctable, if the error is realizing on your user "administrator", it is possible that it is very difficult to return on the file
+
+
+We also find the getent command that can be used, but this time with the group argument. Just like for the getent passwd command, with the getent group command we will have in addition locally defined groups groups present from an external source such as Ldap, ... Of course in our case this is equivalent
+
+### example getent group
+```
+admuser@srv01:~$ getent group | head -20
+root:x:0:
+daemon:x:1:
+bin:x:2:
+sys:x:3:
+adm:x:4:admuser
+tty:x:5:
+disk:x:6:
+lp:x:7:
+mail:x:8:
+news:x:9:
+uucp:x:10:
+man:x:12:
+proxy:x:13:
+kmem:x:15:
+dialout:x:20:
+fax:x:21:
+voice:x:22:
+cdrom:x:24:admuser
+floppy:x:25:
+tape:x:26:
+``` 
+
+The GOOD practice is to use getent group when we want to have the information on the groups this assures us to have all the information
+

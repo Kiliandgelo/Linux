@@ -1,0 +1,335 @@
+# Udev Device Manager System
+## Concept
+
+### Terminology
+On Linux-based systems, the / dev directory is used to hold devices as a file, the "nodes", which pertain to system devices. Each "node" refers to a device, which may or may not exist. User applications can use these "nodes" to interact with the device. For example, the graphical server X will "listen" / dev / input / mice that refers to the mouse and move the pointer on the screen.
+
+
+The original / dev directory contained all the devices in the system, so it was so large. Devfs was created to simplify this use, but this system has shown its limits when there are complicated problems to solve.
+
+
+Udev is the new system for managing the / dev directory, designed to push the limits put forward by previous versions of / dev, and provide a robust link. In order to create and name the devices in / dev, the "nodes" that correspond to the system devices, udev links the information given by sysfs to the rules given by the user. This wiki aims to explain how to write udev rules.
+
+
+Sysfs has been formalized with the 2.6 series kernels. It is managed by the kernel to export basic information about devices currently connected to the system. Udev uses this information to create the 'nodes' corresponding to the devices on your computer. Sysfs is mounted on / sys and you can browse it: you can watch these files before diving into udev. In this wiki, I will use / sys and sysfs, which mean the same thing.
+
+
+## Why
+udev was created to respond to hot-plug events. There is a lot of documentation that refers to the creation of device references in response to the appearance of new devices. But udev is more general; it can execute arbitrary user space commands in response to the appearance of new devices or any event transmitted by the kernel.
+
+
+The udev rules are flexible and very powerful. Here are some examples of what you can do:
+* change the default name assigned to a device;
+* give an alternative / persistent name to a device by creating a symbolic link;
+* name a device based on the output of a program;
+* change the permissions and properties of a device;
+* launch a script when a device is created or deleted (usually for a hot-pluggable device, such as USB);
+* rename network interfaces
+
+
+Rule writing is not a solution if there is no device "node" at all for your particular device. If there is no rule, udev will create the device "node" with the name given by the kernel by default.
+
+
+There are several advantages to having a constant device name. Suppose you have two USB devices: a webcam and a USB key. These devices are normally assigned to the "nodes" devices / dev / sda and / dev / sdb, but this depends on the order in which they were connected. That's why it's more convenient to name the devices every time in the same way, for example / dev / camera and / dev / flashdisk.
+
+## Presentation
+
+### Introduction
+The udev system consists of a few services from the kernel and the udevd daemon. The kernel warns the demon udevd that this or that event has happened. The udevd daemon is configured to respond to events with the corresponding actions. Event information comes from the kernel - actions occur in the user space. Event responses are configurable in "rules".
+
+
+The udevd daemon, like other daemons, is started at startup with an init script: /etc/init.d/udev. Its configuration file is /etc/udev/udev.conf. The rule files (which are nothing more than an extra configuration of udevd) are in /etc/udev/rules.d. All files in this directory, whose names end with ".rules", are analyzed in alphabetical order. When the configuration file or rule files are changed, the udevd daemon must be restarted (or, as mentioned later in this page, the udevadm program can be used).
+
+
+Most of the /etc/udev/rules.d files are links to files located elsewhere. The author assumes that when rules files are modified, the publisher's backup files do not remain in the rules space where they could be used at the next daemon startup. Also, since the links may have different names from the original files, they can be ordered without worrying about the name they carry (as is the case with init scripts).
+
+
+The times when udevd is active are:
+1. At startup, it scans configuration files and rule files and builds a database of rules in memory.
+2. When an event occurs, it checks its database and performs the appropriate actions.
+
+## Udev concretely
+
+Well this is the theory, the explanation of the role of dynamic management and rules but concretely how this materializes? Firstly when we realize the command ls in the directory / dev believed me before the presence of udev to list the files in the directory was rather painful !! But let's look at the simplification result that the udev system offers us thanks to the rule already present!
+
+
+I made mention that udev could realize symbolic link in order to facilitate the access for the human being, Here is one with the cdrom
+
+### Udev and symbolic link of the cdrom
+```
+# Display of / dev / cdrom
+$ ls -l /dev/cdrom 
+lrwxrwxrwx 1 root root 3 Feb  3 12:29 /dev/cdrom -> sr0
+ 
+# Displays the "real" device
+$ ls -l /dev/sr0 
+brw-rw----+ 1 root cdrom 11, 0 Feb  3 12:29 /dev/sr0
+```
+
+We can see in this example that the block device / dev / sr0 with the permissions 660 and that the group owner is cdrom this was modify during this creation by udev this allows us of limited who can accede to the cdrom to write a cd. In order to facilitate communication with this cdrom udev create a symbolic link / dev / cdrom to / dev / sr0 this allows the program or the user to always the same file / dev / cdrom and it is the link that changes to the real device.
+
+
+Another use of symbolic link for devices is for hard disks, udev manages directory / dev / disk and will create directories, this to the advantage of being able to use constant device names, mainly for hard disks removable / usb key. We note that the name assigned / dev / sd [a-z] may vary depending on when we plug in the device. The first usb key will have / dev / sdb and the second key will be / dev / sdc but the next time if I plug the keys in the other sequence the name will be different. In order to solve this problem udev allows us to use several identification mode. Several names for the same devices:
+
+* by-id 
+
+### exemple ls by-id
+```
+$ ls -l by-id/
+total 0
+lrwxrwxrwx 1 root root  9 jan 31 11:15 ata-SAMSUNG_HD161GJ_S1VCJ90S738645 -> ../../sda
+lrwxrwxrwx 1 root root 10 jan 13 18:48 ata-SAMSUNG_HD161GJ_S1VCJ90S738645-part1 -> ../../sda1
+lrwxrwxrwx 1 root root 10 jan 13 18:48 ata-SAMSUNG_HD161GJ_S1VCJ90S738645-part2 -> ../../sda2
+lrwxrwxrwx 1 root root 10 jan 13 18:48 ata-SAMSUNG_HD161GJ_S1VCJ90S738645-part5 -> ../../sda5
+lrwxrwxrwx 1 root root  9 jan 13 18:48 ata-TSSTcorp_DVD+_-RW_TS-H653G_R4576GAS71306300 -> ../../sr0
+lrwxrwxrwx 1 root root  9 jan 31 11:15 scsi-SATA_SAMSUNG_HD161GJ_S1VCJ90S738645 -> ../../sda
+lrwxrwxrwx 1 root root 10 jan 13 18:48 scsi-SATA_SAMSUNG_HD161GJ_S1VCJ90S738645-part1 -> ../../sda1
+lrwxrwxrwx 1 root root 10 jan 13 18:48 scsi-SATA_SAMSUNG_HD161GJ_S1VCJ90S738645-part2 -> ../../sda2
+lrwxrwxrwx 1 root root 10 jan 13 18:48 scsi-SATA_SAMSUNG_HD161GJ_S1VCJ90S738645-part5 -> ../../sda5
+lrwxrwxrwx 1 root root  9 fév 10 12:25 usb-Kingston_DataTraveler_G3_00142238268CEB31F51D00B7-0:0 -> ../../sdb
+lrwxrwxrwx 1 root root 10 fév 10 12:25 usb-Kingston_DataTraveler_G3_00142238268CEB31F51D00B7-0:0-part1 -> ../../sdb1
+lrwxrwxrwx 1 root root  9 jan 31 11:15 wwn-0x50024e9200beb099 -> ../../sda
+lrwxrwxrwx 1 root root 10 jan 13 18:48 wwn-0x50024e9200beb099-part1 -> ../../sda1
+lrwxrwxrwx 1 root root 10 jan 13 18:48 wwn-0x50024e9200beb099-part2 -> ../../sda2
+lrwxrwxrwx 1 root root 10 jan 13 18:48 wwn-0x50024e9200beb099-part5 -> ../../sda5
+```
+
+In the above example we can see that the id consists of the ATA, SCSI, USB currency type, we can see that the hard disk / dev / sda is represented several times in different form, this corresponds to the different mode interpretation of the hard disk:
+* ata-SAMSUNG_HD161GJ_S1VCJ90S738645 -> ../../sda
+* scsi-SATA_SAMSUNG_HD161GJ_S1VCJ90S738645 -> ../../sda
+* wwn-0x50024e9200beb099 -> ../../sda
+
+* by-label :
+### exemple by-label
+```
+$ ls -l by-label/
+lrwxrwxrwx 1 root root 10 fév 10 12:25 KINGSTON -> ../../sdb1
+```
+
+As you can see in the by-label directory there is only one hard drive to the / dev / sdb1 partition. The Label refers to the name assigned to the partition during formatting sounds, in this case NO partition on disk / dev / sda was written with a name "Label" result the system does not list them. In this directory will be listed only partitions because a hard drive has no label this is only on the system queue, the label will be read regardless of the type of system file used NTFS, ext3, ... This is not restricted to Unix system files.
+
+* by-path:
+### exemple by-patth
+
+```
+$ ls -l by-path/
+lrwxrwxrwx 1 root root  9 fév 10 12:25 pci-0000:00:1d.7-usb-0:2:1.0-scsi-0:0:0:0 -> ../../sdb
+lrwxrwxrwx 1 root root 10 fév 10 12:25 pci-0000:00:1d.7-usb-0:2:1.0-scsi-0:0:0:0-part1 -> ../../sdb1
+lrwxrwxrwx 1 root root  9 jan 31 11:15 pci-0000:00:1f.2-scsi-0:0:0:0 -> ../../sda
+lrwxrwxrwx 1 root root 10 jan 13 18:48 pci-0000:00:1f.2-scsi-0:0:0:0-part1 -> ../../sda1
+lrwxrwxrwx 1 root root 10 jan 13 18:48 pci-0000:00:1f.2-scsi-0:0:0:0-part2 -> ../../sda2
+lrwxrwxrwx 1 root root 10 jan 13 18:48 pci-0000:00:1f.2-scsi-0:0:0:0-part5 -> ../../sda5
+lrwxrwxrwx 1 root root  9 jan 13 18:48 pci-0000:00:1f.2-scsi-1:0:0:0 -> ../../sr0
+```
+
+In the directory we find the reference of the disk according to its path system, personally I use it less however this can indicate us in which USB port is the key USB for example. We ensure that we communicate well with the first hard drive connected to the nat.
+
+
+* by-uuid:
+### exemple by-uid
+
+```
+$ ls  -l by-uuid/
+lrwxrwxrwx 1 root root 10 jan 13 18:48 0af1443a-ad46-4373-8534-ef1f7ee564d0 -> ../../sda1
+lrwxrwxrwx 1 root root 10 jan 13 18:48 88f0c393-0aa5-4462-9c79-6bd33db98705 -> ../../sda5
+lrwxrwxrwx 1 root root 10 fév 10 12:25 E79B-6B7C -> ../../sdb1
+```
+
+Once again here we only see partitions because the UUID is associated with a partition during this creation. UUID is a longer or shorter sequence of alpha-numeric characters that makes it possible to absolutely identify each storage device and partition. The UUID digit is automatically calculated using an algorithm including some data from the host computer, when creating or formatting the partition or partition table. This method of calculation does not present any credible security risk. The case of E79B-6B7C is a partition vfat voila why the UUID does not have the same format.
+
+
+The above presentation is really just the tip of the iceberg, because udev does a lot of background work, but this will allow us to introduce the concept of udev rules.
+
+
+## The rules (rules) Udev
+To decide how to name a device and what to do, udev uses a series of rule files. These files are in the /etc/udev/rules.d directory, and all must have the .rules extension. The udev rules created by default are in the /lib/udev/rules.d/50-udev-default.rules file. It might be interesting to take a look - it contains some examples - and some rules contain an example of devfs output that you will find in / dev by default. However, it is advisable not to write a rule directly in it.
+
+
+The files in /lib/udev/rules.d are sorted in alphabetical order, and under certain circumstances, the order in which they are parsed is important. In general, you want your own rules to be taken into account before the rules created by default, so create your file like this: /etc/udev/rules.d/10-local.rules (the number 10 influences the order take into account) and write your own rules in this file.
+
+
+In a rule file, lines starting with "#" are treated as comments. All other lines are therefore considered rules. The rules are written on a single line (they are not cut by a line crossing with ENTER).
+
+
+A device can be controlled by several rules. This can be advantageous when for example we write two rules for a device, which give a different name for the same device. Both rules will be applied even if these rules are in separate files. It is important to understand that udev does not stop when it finds a rule, it continues its search and tries to apply each found rule.
+
+
+Each rule is made of a set of matching keys and assignment keys, separated by commas. Match keys are the conditions used to identify the device on which the rule is acting. When all the series of these matching keys correspond to the device, then the rule is applied and the actions of the assignment keys are applied. Each rule must consist of at least one matching key and one assignment key.
+
+
+## Basic rules
+In one rule, Udev can use multiple keys to identify a device in a very specific way. The most common keys are presented below, the others will be treated later. For the complete list, see udev help with the man udev command.
+
+* KERNEL – the device name given by the kernel;
+* SUBSYSTEM - the name of the sub system containing the device;
+* DRIVER - the name of the device driver.
+
+
+After using a series of keys to precisely define the device, udev gives you control, thanks to the assignment keys. For the full list of these keys, see udev help with the man command
+
+
+udev. The most common assignment keys are below, the others will be discussed later.
+* NAME – device name "node";
+* SYMLINK - list of symlinks, these being the alternative names for the device.
+
+
+Here is an example of simple rules, we will create a symlink so that a symbolic link named / dev / First_disk points to / dev / sda. 
+
+### Add rules udev.
+
+```
+# Creating the rules file
+$ sudo vim /etc/udev/rules.d/99-custom.rules
+ 
+KERNEL=="sda", SYMLINK+="Premier_disque"
+ 
+# Udev will not re-read the configuration right now so for now it's not active
+$  ls -l /dev/Premier_disque
+ls: cannot access /dev/Premier_disque: No such file or director
+ 
+# So we will tell udev to reread the files
+$ sudo udevadm trigger
+ 
+# Validation that it works
+$ ls -l /dev/Premier_disque 
+lrwxrwxrwx 1 root root 3 Feb 17 12:41 /dev/Premier_disque -> sda
+```
+
+It is possible to view the udev events as shown below, very useful of course when debugging.
+
+### Show event Udev
+
+```
+# Displays udev events
+$ udevadm monitor --udev
+monitor will print the received events for:
+UDEV - the event which udev sends out after rule processing
+ 
+UDEV  [1983.409421] change   /devices/platform/dell-laptop/backlight/dell_backlight (backlight)
+UDEV  [2001.878332] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7 (usb)
+UDEV  [2001.920636] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0 (usb)
+UDEV  [2001.926726] remove   /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0 (usb)
+UDEV  [2001.931389] add      /bus/usb/drivers/usb-storage (drivers)
+UDEV  [2001.935518] add      /module/usb_storage (module)
+UDEV  [2001.941857] remove   /devices/pci0000:00/0000:00:1d.7/usb1/1-7 (usb)
+UDEV  [2002.196345] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7 (usb)
+UDEV  [2002.204597] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0 (usb)
+UDEV  [2002.211899] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2 (scsi)
+UDEV  [2002.215217] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/scsi_host/host2 (scsi_host)
+UDEV  [2003.224048] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0 (scsi)
+UDEV  [2003.227715] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0 (scsi)
+UDEV  [2003.232309] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0/scsi_device/2:0:0:0 (scsi_device)
+UDEV  [2003.232351] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0/bsg/2:0:0:0 (bsg)
+UDEV  [2003.236219] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0/scsi_generic/sg2 (scsi_generic)
+UDEV  [2003.239757] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0/scsi_disk/2:0:0:0 (scsi_disk)
+UDEV  [2004.267191] add      /devices/virtual/bdi/8:16 (bdi)
+UDEV  [2004.386991] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0/block/sdb (block)
+UDEV  [2004.464509] add      /devices/pci0000:00/0000:00:1d.7/usb1/1-7/1-7:1.0/host2/target2:0:0/2:0:0:0/block/sdb/sdb1 (block)
+UDEV  [2004.592276] add      /module/nls_iso8859_1 (module)
+```
+
+It is possible to collect information about the device with the udevadm command, it has several ways to provide the device that you want to interoperate
+
+
+here are two examples:
+### Information udev for USB device.
+```
+$ sudo udevadm info -a -p /devices/pci0000:00/0000:00:1d.7/usb1/1-7
+ 
+Udevadm info starts with the device specified by the devpath and then
+walks up the chain of parent devices. It prints for every device
+found, all possible attributes in the udev rules key format.
+A rule to match, can be composed by the attributes of the device
+and the attributes from one single parent device.
+ 
+  looking at device '/devices/pci0000:00/0000:00:1d.7/usb1/1-7':
+    KERNEL=="1-7"
+    SUBSYSTEM=="usb"
+    DRIVER=="usb"
+    ATTR{bDeviceSubClass}=="00"
+    ATTR{bDeviceProtocol}=="00"
+    ATTR{devpath}=="7"
+    ATTR{idVendor}=="0930"
+    ATTR{speed}=="480"
+    ATTR{bNumInterfaces}==" 1"
+    ATTR{bConfigurationValue}=="1"
+ 
+# other method to collect information
+ 
+$ sudo  udevinfo -a -p /sys/block/sde
+~
+~
+~
+looking at parent device '/devices/pci0000:00/0000:00:10.4/usb1/1-3':
+KERNELS=="1-3"
+SUBSYSTEMS=="usb"
+DRIVERS=="usb"
+ATTRS{configuration}==""
+ATTRS{bNumInterfaces}==" 1"
+ATTRS{bConfigurationValue}=="1"
+ATTRS{bmAttributes}=="80"
+ATTRS{bMaxPower}=="500mA"
+ATTRS{urbnum}=="602"
+ATTRS{idVendor}=="090c"
+ATTRS{idProduct}=="1000"
+ATTRS{bcdDevice}=="1100"
+ATTRS{bDeviceClass}=="00"
+ATTRS{bDeviceSubClass}=="00"
+ATTRS{bDeviceProtocol}=="00"
+ATTRS{bNumConfigurations}=="1"
+ATTRS{bMaxPacketSize0}=="64"
+ATTRS{speed}=="480"
+ATTRS{busnum}=="1"
+ATTRS{devnum}=="5"
+ATTRS{version}==" 2.00"
+ATTRS{maxchild}=="0"
+ATTRS{quirks}=="0x0"
+ATTRS{authorized}=="1"
+ATTRS{manufacturer}=="SMI Corporation"
+ATTRS{product}=="USB DISK"
+ATTRS{serial}=="AA71013000016033"
+```
+
+Using its information we can make our own rules for example so that the system executes a backup script. Here is an example of how to define a backup script.
+
+
+## Backup script
+Following the information collected by the udevinfo command we are able to properly identify the device. In the directory /etc/udev/rules.d/ it is possible to define our custom rules for our system so we will make the file 99-backup.rules. In the latter we will have the instruction to realize when detecting the device
+
+### /etc/udev/rules.d/99-backup.rules
+
+      KERNEL==”sd?1″, SUBSYSTEM==”block”, ATTRS{serial}=="AA71013000016033", SYMLINK+=”backup”, RUN+=”/usr/local/bin/backup.sh”
+ 
+ 
+So when the kernel will detect the device that the kernel is associated with the kernel by / dev / sd? 1 (so sda1, or sdb1 or sdc1 or ...) that this is a block device that the serial number is AA71013000016033 if all of these conditions are met the system will make the symbolic link / dev / backup to / dev / sd? 1 AND will execute the script /usr/local/bin/backup.sh.
+
+
+Here is the content of the script / usr / local / bin / backup
+### /usr/local/bin/backup.sh
+
+```bash
+#!/bin/bash
+#
+########################
+ 
+REP_2_BACKUP=/mnt/backup
+DEVICE_DISK=/dev/backup
+REP_2_BACKUP="/etc /var/log /home"
+DATE=$(date +%F)
+ 
+# mount the device
+mount $DEVICE_DISK $REP_2_BACKUP
+ 
+# realization of the backup
+for rep in $REP_2_BACKUP
+do
+        rep_clean=$(basename $rep)
+        tar -zcf $REP_2_BACKUP/$rep_clean-$DATE.tar.gz $rep
+done
+# mount it
+u
+mount $DEVICE_DISK $REP_2_BACKUP
+````
+
+If you want to display messages via a graphic window I invite you to look at the zenity command. I will not cover this subject here unfortunately
+

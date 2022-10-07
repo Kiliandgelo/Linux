@@ -1,0 +1,402 @@
+# YUM repository management system
+## Presentation of the Yum system of Redhat
+Yum was originally developed by the yellow Linux distribution.
+
+
+Yum works with a repository, these are provided via the http or https protocols (it is possible that other protocols exist that I do not know). The main configuration file is of course in / etc and this name is /etc/yum.conf.
+
+
+here is an example of content
+### /etc/yum.conf
+```
+[main]
+cachedir=/var/cache/yum/$basearch/$releasever
+keepcache=0
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+obsoletes=1
+gpgcheck=1
+plugins=1
+installonly_limit=5
+bugtracker_url=http://bugs.centos.org/set_project.php?project_id=16&ref=http://bugs.centos.org/bug_report_page.php?category=yum
+distroverpkg=centos-release
+```
+
+I'll let you explore the man page for the different options but I'd like to highlight some:
+* exclude: List of packages to exclude from the update or installation. This can be a list separated by spaces. Generic shell expressions (with wildcards like * and?) Are allowed.
+* installonlypkgs: List of packages that should only be installed, never updated. Nuclei, in particular, fall into this category. The default is: "kernel, kernel-smp, kernel-bigmem, kernel-enterprise, kernel-debug, kernel-unsupported".
+* gpgcheck: Value: 1 or 0. Perform or not the verification of the GPG signature on the packages. When configured in the [main] section, this configures the default value for all filings in the file. This option is also for local packages. The default value is 0 (no verification).
+* bandwidth: Specify the maximum bandwidth available on the network, in bytes / sec. Used with the throttle option higher. If throttle is a percentage and bandwidth is 0, the bandwidth throttling is disabled. If throttle is a rate expressed in bytes / sec, this option is ignored. The default value is 0 (no strangling).
+* reposdir: A list of directories where yum searches for .repo files that define which repositories to use. The default value is /etc/yum/repos.d. Each file in the directory must contain one or more [repository] sections as documented in the [repository] OPTIONS section. They will be merged with the repositories defined in /etc/yum/yum.conf to form a complete set of repositories that yum will use.
+
+
+You will find a lot of information on redhat site: sec-Configuring_Yum_and_Yum_Repositories
+
+
+This file contains only the general configuration the list of depots / repository found by default in the directory /etc/yum.repos.d
+### repo file list
+
+    # ls /etc/yum.repos.d/
+    CentOS-Base.repo  CentOS-Debuginfo.repo  CentOS-Media.repo  CentOS-Vault.repo
+    
+    
+In the listing above we have only the default repository of Centos, here is the contents of the base file:
+### /etc/yum.repos.d/CentOS-Base.repo
+```
+[base]
+name=CentOS-$releasever - Base
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=os
+#baseurl=http://mirror.centos.org/centos/$releasever/os/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+ 
+#released updates 
+[updates]
+name=CentOS-$releasever - Updates
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=updates
+#baseurl=http://mirror.centos.org/centos/$releasever/updates/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+ 
+#additional packages that may be useful
+[extras]
+name=CentOS-$releasever - Extras
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=extras
+#baseurl=http://mirror.centos.org/centos/$releasever/extras/$basearch/
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+ 
+#additional packages that extend functionality of existing packages
+[centosplus]
+name=CentOS-$releasever - Plus
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=centosplus
+#baseurl=http://mirror.centos.org/centos/$releasever/centosplus/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+ 
+#contrib - packages by Centos Users
+[contrib]
+name=CentOS-$releasever - Contrib
+mirrorlist=http://mirrorlist.centos.org/?release=$releasever&arch=$basearch&repo=contrib
+#baseurl=http://mirror.centos.org/centos/$releasever/contrib/$basearch/
+gpgcheck=1
+enabled=0
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-6
+```
+
+Variable use:
+
+* $releasever
+ 
+You can use this variable to reference the release version of Red Hat Enterprise Linux. Yum obtains the value of $releasever from the distroverpkg=value line in the /etc/yum.conf configuration file. If there is no such line in /etc/yum.conf, then yum infers the correct value by deriving the version number from the redhat-release package.
+
+* $arch
+
+
+You can use this variable to refer to the system's CPU architecture as returned when calling Python's os.uname() function. Valid values for $arch include i686 and x86_64.
+
+* $basearch
+
+
+You can use $basearch to reference the base architecture of the system. For example, i686 machines have a base architecture of i386, and AMD64 and Intel64 machines have a base architecture of x86_64.
+
+#### List the repositories present:
+With the yum repolist command it is possible to list the repositories configure
+### list the repots with yum
+```
+[root@localhost ~]# yum repolist
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: mirror.science.uottawa.ca
+ * extras: less.cogeco.net
+ * updates: www.cubiculestudio.com
+repo id                                                                             repo name                                                                                       status
+base                                                                                CentOS-6 - Base                                                                                 4 802
+extras                                                                              CentOS-6 - Extras                                                                                  12
+updates                                                                             CentOS-6 - Updates                                                                                663
+repolist: 5 477
+```
+
+## External repository
+There are repositories that are not managed by the CentOS Foundation. The advantage of using packages from CentOS are numerous:
+* update ensure
+* package validation
+
+
+Unfortunately it happens that the software we need is not present, in this case 2 options are available to us:
+1. Search the RPM file on another site / repository
+2. Compile ourselves the software, from the source code
+
+
+For the compilation option we will see this in the next chapter, so for the moment see option 1, looking for the rpm file on another site.
+
+
+It can be critical to download an rpm file anywhere and install it, on another operating system such as Ms Windows would you download the .exe file with the name of the software anywhere? Although the reputation of GNU / Linux wants the system to be safe, we are not safe from a malicious person.
+
+
+It is therefore better to download the file from the software editor, the rather negative aspect of this method is that once installed you will have to validate regularly if there is an update available. Since the rpm file will have been downloaded then install on the machine, yum will not be where to find it on the internet. It is better to have a repository to configure.
+
+
+Here is a list of republished external repository:
+* epel : https://fedoraproject.org/wiki/EPEL
+* rpmforge : http://repoforge.org/
+* dag : http://dag.wiee.rs/rpm/
+
+
+#### Case example with postgresql
+
+If I list the version of postgresql-server available on centos 6:
+### search postgresql server
+```
+[root@localhost ~]# yum search postgresql-server
+Loaded plugins: fastestmirror
+Determining fastest mirrors
+ * base: mirror.science.uottawa.ca
+ * extras: less.cogeco.net
+ * updates: www.cubiculestudio.com
+============================================================================= N/S Matched: postgresql-server =============================================================================
+postgresql-server.i686 : The programs needed to create and run a PostgreSQL server
+```
+
+I see that I have version 8.4, the latter is up to date with all the bug and security fix, unfortunately if I want to have the functionality of version 9.3 I have to find elsewhere.
+
+
+By going to the postgresql site (http://postgresql.org), I can download the rpm file at http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/repoview/postgresql93 -server.html, see at the end I have the file postgresql93-server-9.3.4-1PGDG.rhel6.
+
+
+Take the example that I download the rpm manually, I will list the dependencies and install the package
+
+### download the package, list the dependencies and attempt to install
+```
+# download
+[root@localhost ~]# wget http://yum.postgresql.org/9.3/redhat/rhel-6-i386/postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm
+--2014-05-14 21:25:56--  http://yum.postgresql.org/9.3/redhat/rhel-6-i386/postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm
+Résolution de yum.postgresql.org... 98.129.198.114, 2001:4800:7903:3::114
+Connexion vers yum.postgresql.org|98.129.198.114|:80...connecté.
+requête HTTP transmise, en attente de la réponse...200 OK
+Longueur: 4229148 (4,0M) [application/x-redhat-package-manager]
+Sauvegarde en : «postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm»
+ 
+100%[====================================================================================>] 4 229 148   1,28M/s   ds 3,1s
+ 
+2014-05-14 21:25:59 (1,28 MB/s) - «postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm» sauvegardé [4229148/4229148]
+ 
+[root@localhost ~]#
+ 
+# list the dependencies
+[root@localhost ~]# rpm -qRp postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm
+attention: postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm: Entête V4 DSA/SHA1 Signature, key ID 442df0f8: NOKEY
+/bin/sh
+/bin/sh
+/bin/sh
+/bin/sh
+/bin/sh
+/sbin/chkconfig
+/usr/sbin/useradd
+config(postgresql93-server) = 9.3.4-1PGDG.rhel6
+libc.so.6
+libc.so.6(GLIBC_2.0)
+libc.so.6(GLIBC_2.1)
+libc.so.6(GLIBC_2.1.2)
+libc.so.6(GLIBC_2.1.3)
+libc.so.6(GLIBC_2.11)
+libc.so.6(GLIBC_2.2)
+libc.so.6(GLIBC_2.3)
+libc.so.6(GLIBC_2.3.3)
+libc.so.6(GLIBC_2.3.4)
+libc.so.6(GLIBC_2.4)
+libc.so.6(GLIBC_2.6)
+libc.so.6(GLIBC_2.7)
+libcom_err.so.2
+libcrypto.so.10
+libcrypto.so.10(libcrypto.so.10)
+libdl.so.2
+libdl.so.2(GLIBC_2.0)
+libdl.so.2(GLIBC_2.1)
+libgssapi_krb5.so.2
+libgssapi_krb5.so.2(gssapi_krb5_2_MIT)
+libkrb5.so.3
+libkrb5.so.3(krb5_3_MIT)
+libldap-2.4.so.2
+libm.so.6
+libm.so.6(GLIBC_2.0)
+libm.so.6(GLIBC_2.1)
+libpam.so.0
+libpam.so.0(LIBPAM_1.0)
+libpq.so.5
+libssl.so.10
+libssl.so.10(libssl.so.10)
+libxml2.so.2
+libxml2.so.2(LIBXML2_2.4.30)
+libxml2.so.2(LIBXML2_2.6.0)
+postgresql93 = 9.3.4-1PGDG.rhel6
+rpmlib(CompressedFileNames) <= 3.0.4-1
+rpmlib(FileDigests) <= 4.6.0-1
+rpmlib(PayloadFilesHavePrefix) <= 4.0-1
+rtld(GNU_HASH)
+rpmlib(PayloadIsXz) <= 5.2-1
+[root@localhost ~]#
+```
+
+Let's do the installation:
+### installation
+
+```
+[root@localhost ~]# rpm -Uvh postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm
+attention: postgresql93-server-9.3.4-1PGDG.rhel6.i686.rpm: Entête V4 DSA/SHA1 Signature, key ID 442df0f8: NOKEY
+erreur: Dépendances requises:
+        libpq.so.5 est nécessaire pour postgresql93-server-9.3.4-1PGDG.rhel6.i686
+        postgresql93 = 9.3.4-1PGDG.rhel6 est nécessaire pour postgresql93-server-9.3.4-1PGDG.rhel6.i686
+```
+
+Installation is not possible because all the dependencies are not respected. We can manually download all the packages however this will be "long" and especially painful. The other major problem is that with this method if a new version is available we will not inform when updating the system unless registered on the mailing list of the project.
+
+
+Postgres offers the possibility of configuring the official repository of the project, unfortunately not all projects offer this option. (Http://www.postgresql.org/download/linux/redhat/)
+
+
+So we will make the configuration of this repository, to do this postgres offers a rpm that realizes the configuration of yum, I will download the file and list the contents of the rpm.
+### Download yum repo postgres and list the files
+
+```
+[root@localhost ~]# wget http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-redhat93-9.3-1.noarch.rpm 
+--2014-05-16 12:25:57--  http://yum.postgresql.org/9.3/redhat/rhel-6-x86_64/pgdg-redhat93-9.3-1.noarch.rpm
+Resolving yum.postgresql.org... 98.129.198.114, 2001:4800:7903:3::114
+Connecting to yum.postgresql.org|98.129.198.114|:80... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 5232 (5,1K) [application/x-redhat-package-manager]
+Saving to: 'pgdg-redhat93-9.3-1.noarch.rpm'
+ 
+100%[================================================================================================================================================>] 5 232       --.-K/s   in 0s      
+ 
+2014-05-16 12:25:59 (95,9 MB/s) - 'pgdg-redhat93-9.3-1.noarch.rpm' saved [5232/5232]
+ 
+[root@localhost ~]# rpm -qlp pgdg-redhat93-9.3-1.noarch.rpm 
+warning: pgdg-redhat93-9.3-1.noarch.rpm: Header V4 DSA/SHA1 Signature, key ID 442df0f8: NOKEY
+/etc/pki/rpm-gpg
+/etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-93
+/etc/yum.repos.d/pgdg-93-redhat.repo
+```
+
+As we can see the rpm, contains:
+* The GPG key for package validation
+* Postgres repository configuration
+
+Performing the installation and viewing the configuration file:
+
+### install and validation configuration
+```
+[root@localhost ~]# rpm -Uvh pgdg-redhat93-9.3-1.noarch.rpm
+warning: pgdg-redhat93-9.3-1.noarch.rpm: Header V4 DSA/SHA1 Signature, key ID 442df0f8: NOKEY
+Preparing...                ########################################### [100%]
+   1:pgdg-redhat93          ########################################### [100%]
+[root@localhost ~]# cat /etc/yum.repos.d/pgdg-93-redhat.repo
+[pgdg93]
+name=PostgreSQL 9.3 $releasever - $basearch
+baseurl=http://yum.postgresql.org/9.3/redhat/rhel-$releasever-$basearch
+enabled=1
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-93
+ 
+[pgdg93-source]
+name=PostgreSQL 9.3 $releasever - $basearch - Source
+failovermethod=priority
+baseurl=http://yum.postgresql.org/srpms/9.3/redhat/rhel-$releasever-$basearch
+enabled=0
+gpgcheck=1
+gpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-PGDG-93
+```
+
+So the configuration file is present and the option enabled = 1 is set for the main repo of the binary files. The repository of source file packages is disabled.
+
+
+If we list the repository we will have pgdg93:
+
+### rest list
+```
+[root@localhost ~]# yum repolist
+Loaded plugins: fastestmirror
+Loading mirror speeds from cached hostfile
+ * base: www.cubiculestudio.com
+ * extras: less.cogeco.net
+ * updates: less.cogeco.net
+pgdg93                                                                                                                                                             | 3.6 kB     00:00     
+pgdg93/primary_db                                                                                                                                                  |  89 kB     00:00     
+repo id                                                                           repo name                                                                                         status
+base                                                                              CentOS-6 - Base                                                                                   4 802
+extras                                                                            CentOS-6 - Extras                                                                                    12
+pgdg93                                                                            PostgreSQL 9.3 6 - i386                                                                             178
+updates                                                                           CentOS-6 - Updates                                                                                  673
+repolist: 5 665
+```
+
+So we are able to list packages for postgresql
+
+### postgresql server package list
+
+```
+[root@localhost ~]# yum search postgresql | grep server
+postgresql-server.i686 : The programs needed to create and run a PostgreSQL
+                       : server
+postgresql93-server.i686 : The programs needed to create and run a PostgreSQL
+                         : server
+pg_activity.noarch : htop like application for PostgreSQL server activity
+pgpool-II-93.i686 : Pgpool is a connection pooling/replication server for
+``` 
+At this point we can install the version 8.4 still available with the CentOS base repo and / or the 9.3 version available with the postgresql93-server package.
+
+
+Of course it is not advisable to install the 2 versions especially that they will use the same port 5432 for release there is a risk of conflict if the 2 system are running at the same time on the same ip and port.
+
+
+If you wish to disable the possibility of installing a package it is possible to exclude it in the file /etc/yum.conf as mentioned earlier. Here is an example of configuration:
+
+### yum.conf file with exclusion.
+
+```
+[main]
+cachedir=/var/cache/yum/$basearch/$releasever
+keepcache=0
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+obsoletes=1
+gpgcheck=1
+plugins=1
+installonly_limit=5
+bugtracker_url=http://bugs.centos.org/set_project.php?project_id=16&ref=http://bugs.centos.org/bug_report_page.php?category=yum
+distroverpkg=centos-release
+ 
+exclude = postgresql-server
+ 
+#  This is the default, if you make this bigger yum won't see if the metadata
+# is newer on the remote and so you'll "gain" the bandwidth of not having to
+# download the new metadata and "pay" for it by yum not having correct
+# information.
+#  It is esp. important, to have correct metadata, for distributions like
+# Fedora which don't keep old packages around. If you don't like this checking
+# interupting your command line usage, it's much better to have something
+# manually check the metadata once an hour (yum-updatesd will do this).
+# metadata_expire=90m
+ 
+# PUT YOUR REPOS HERE OR IN separate files named file.repo
+# in /etc/yum.repos.d
+```
+
+At line 14 we have the exclusion now if I redo the search postgresql-server will not be present anymore.
+
+### postgresql-server search after exclusion
+
+```
+[root@localhost ~]# yum search postgresql | grep server
+postgresql93-server.i686 : The programs needed to create and run a PostgreSQL
+                         : server
+pg_activity.noarch : htop like application for PostgreSQL server activity
+pgpool-II-93.i686 : Pgpool is a connection pooling/replication server for
+``` 
+
+## Référence
+A cheat sheet available: http://www.cheatography.com/alasta/cheat-sheets/yum-yellowdog-updater-modified/
+

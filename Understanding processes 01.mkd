@@ -1,0 +1,320 @@
+# Understanding processes
+## Management and visualization of processes
+### Definition of a processes
+A process is a program that is running. For example, each time the ls command is run, a process is created during the execution of the command.
+
+
+A process is identified by a unique number called the PID (Process IDentifier).
+
+
+A process has a parent process called the PPID (Parent PID).
+
+
+The peculiarity of a process is to run with the rights granted to the user who initiated the command. This contributes greatly to the security of the system. Thus, if a user contracts a malicious program (a virus for example), the process will be subject to the right of access of this user, and can not perform unauthorized operations (such as for example change the password file) .
+
+
+When the computer starts, the system loads the Linux kernel, which takes care of hardware initialization and device discovery. Once this is done, it then starts the init process, which has the peculiarity of being the first process and always using PID 1. This process then starts the kernel processes (whose name is noted in square brackets), and the first system processes.
+
+
+Each processus thus has a father (except init), and can in turn be the father of other processes, etc.
+
+
+## Visualization of processes with PS
+One can visualize the processus that run on a machine with the command: ps (options), the most interesting options are -e (display of all processes) and -f (detailed display). The ps -ef command gives something like this:
+
+### Visualization of processes
+
+```
+admuser@srv01:~$ ps -ef 
+UID        PID  PPID  C STIME TTY          TIME CMD
+root         1     0  0 12:36 ?        00:00:00 /sbin/init
+root         2     0  0 12:36 ?        00:00:00 [kthreadd]
+[ ... CUT OUTPUT ... ]
+root       733     1  0 12:36 tty2     00:00:00 /sbin/getty -8 38400 tty2
+root       735     1  0 12:36 tty3     00:00:00 /sbin/getty -8 38400 tty3
+root       737     1  0 12:36 tty6     00:00:00 /sbin/getty -8 38400 tty6
+root       742     1  0 12:36 ?        00:00:00 /usr/sbin/xinetd -dontfork -pidfile /var/run/xinetd.pid -stayalive -inetd_compat -inetd_ipv6
+root       743     1  0 12:36 ?        00:00:00 acpid -c /etc/acpi/events -s /var/run/acpid.socket
+root       746     1  0 12:36 ?        00:00:00 cron
+daemon     747     1  0 12:36 ?        00:00:00 atd
+root       800     1  0 12:36 tty1     00:00:00 /sbin/getty -8 38400 tty1
+whoopsie   866     1  0 12:36 ?        00:00:00 whoopsie
+```
+
+The meaning of the different columns is as follows:
+* UID name of the user who initiated the process
+* PID is the process number
+* PPID is the number of the parent process
+* C to priority factor: the higher the value, the higher the priority
+* STIME is the start time of the process
+* TTY is the name of the terminal
+* TIME is the processing time of the process
+* COMMAND is the name of the process.
+
+
+Some processes are permanent, that is, they are started at system startup and stopped only when the system is shut down. These processes are called daemons, the term demon is a Frenchization, daemon are abbreviations.
+
+
+To see the processes of a single user, you can type:
+### Visualization of a user's processes
+
+```
+admuser@srv01:~$ ps -u admuser
+  PID TTY          TIME CMD
+ 1143 ?        00:00:00 sshd
+ 1144 pts/0    00:00:00 bash
+ 1259 pts/0    00:00:00 ps
+```
+From one UNIX to another, the output may change. Under LINUX for example ps -Al allows a rich enough output, making a man ps, you will have the range of all possible parameters.
+
+
+The pstree command is used to view the process tree. The -p option allows you to view the PIDs of each process.
+### Display of tree processes.
+
+```
+admuser@srv01:~$ pstree -l
+init-+-acpid
+     |-atd
+     |-cron
+     |-dbus-daemon
+     |-dhclient3
+     |-6*[getty]
+     |-rsyslogd---3*[{rsyslogd}]
+     |-sshd---sshd---sshd---bash---pstree
+     |-udevd---2*[udevd]
+     |-upstart-socket-
+     |-upstart-udev-br
+     |-whoopsie---{whoopsie}
+     `-xinetd
+```
+
+It is also possible to have a different display with the PS command, we use the -o (output) option with the arguments that we want to display:
+
+### Display of processes with memory and CPU
+
+```
+admuser@srv01:~$ sudo ps -eo pid,user,args,pmem,pcpu
+[sudo] password for admuser: 
+  PID USER     COMMAND                     %MEM %CPU
+    1 root     /sbin/init                   0.3  0.1
+    2 root     [kthreadd]                   0.0  0.0
+[ ... CUT OUTPUT ... ]
+  746 root     cron                         0.1  0.0
+  747 daemon   atd                          0.0  0.0
+  800 root     /sbin/getty -8 38400 tty1    0.1  0.0
+  866 whoopsie whoopsie                     0.7  0.0
+ 1019 root     sshd: admuser [priv]         0.6  0.0
+ 1143 admuser  sshd: admuser@pts/0          0.2  0.0
+ 1144 admuser  -bash                        1.3  0.0
+ 1258 root     [kworker/u2:1]               0.0  0.0
+ 1331 root     sudo ps -eo pid,user,args,p  0.3  2.5
+```
+
+You will find all the options available in the man page of the command ps (man ps) in the section STANDARD FORMAT SPECIFIERS
+
+
+## Visualization of the process in / proc
+The proc file system is a pseudo file system that is used as an interface to the kernel data structures. It is usually mounted on / proc. Most files are read-only, but a few allow you to modify kernel variables.
+
+
+* / Proc / [number]
+
+      There is a subdirectory for each running process. The subdirectory returns the process's PID as the name. Each subdirectory contains the following pseudo-files and pseudo-directories.
+
+* / Proc / [number] / cmdline
+
+      This file contains the complete command line of the process, unless the process is a zombie. In the latter case, there is nothing in the file: a reading will return after reading 0 characters.
+      The command line arguments appear as a set of separate strings of NUL characters, with an extra NULL byte after the last argument.
+
+* / Proc / [number] / cwd
+
+      This is a symbolic link to the current working directory of the process.
+
+* / Proc / [number] / environ
+
+      This file contains the process environment. The entries are separated by null bytes (" 0"), and there should be one at the end of the file. So, to view the environment of process number 1, use:
+      (cat / proc / 548 / approx; echo) | tr " 000" " n"
+
+* / Proc / [number] / exe
+    
+      this file is a symbolic link representing the actual path of the command being executed. This symbolic link can be dereferenced normally; attempting to open it will open the executable file. You can even type / proc / [pid] / exe to start a copy of the same process as the specified pid. In a multithreaded process, the contents of this symbolic link are no longer available if the main thread is already terminated
+
+* / Proc / [number] / fd
+
+      This is a subdirectory containing an entry for each file that the process opened. Each entry has the descriptor of the file for name, and is represented by a symbolic link on the real file. Thus, 0 corresponds to standard input, 1 to standard output, 2 to error output, etc.
+
+* / Proc / [number] / limits
+
+      This file specifies the soft and strict limits and the units of measure for each process resource limit (see getrlimit (2)). The file is protected so that only the actual UID of the process can read it.
+
+* / Proc / [number] / root
+
+      Linux, and Unix in general, supports a root concept of the file system for each process, configurable with the chroot (2) system call. This file is a symbolic link that points to the root directory of the process, and behaves like exe, fd / * ...
+
+* / Proc / [number] / stat
+
+      Information about the state of the process. This is used by ps (1). The definition is in /usr/src/linux/fs/proc/array.c.
+
+* / Proc / [number] / status
+
+      Provides the essential information of / proc / [number] / stat and / proc / [number] / statm in a format that is easier for humans to read. Here is an example :
+
+```
+$ cat /proc/$/status
+Name:   bash
+State:  S (sleeping)
+Tgid:   3515
+Pid:    3515
+PPid:   3452
+TracerPid:      0
+Uid:    1000    1000    1000    1000
+Gid:    100     100     100     100
+FDSize: 256
+Groups: 16 33 100
+VmPeak:     9136 kB
+VmSize:     7896 kB
+VmLck:         0 kB
+VmHWM:      7572 kB
+VmRSS:      6316 kB
+VmData:     5224 kB
+VmStk:        88 kB
+VmExe:       572 kB
+VmLib:      1708 kB
+VmPTE:        20 kB
+Threads:        1
+SigQ:   0/3067
+SigPnd: 0000000000000000
+ShdPnd: 0000000000000000
+SigBlk: 0000000000010000
+SigIgn: 0000000000384004
+SigCgt: 000000004b813efb
+CapInh: 0000000000000000
+CapPrm: 0000000000000000
+CapEff: 0000000000000000
+CapBnd: ffffffffffffffff
+Cpus_allowed:   00000001
+Cpus_allowed_list:      0
+Mems_allowed:   1
+Mems_allowed_list:      0
+voluntary_ctxt_switches:        150
+nonvoluntary_ctxt_switches:     545
+```
+
+## Visualization of processes with TOP
+We had already interviewed the top command mainly during the compilation of an application we had seen htop which finally is relatively like top but with color and some more options.
+
+
+Example of the visualization of top:
+
+### Visualization of top
+```
+admuser@srv01:~$ top
+ 
+top - 12:00:02 up 1 day, 23:23,  1 user,  load average: 0.06, 0.03, 0.05
+Tasks:  69 total,   1 running,  68 sleeping,   0 stopped,   0 zombie
+Cpu(s):  0.0%us,  0.3%sy,  0.0%ni, 99.3%id,  0.3%wa,  0.0%hi,  0.0%si,  0.0%st
+Mem:    506432k total,   299544k used,   206888k free,    29220k buffers
+Swap:   976892k total,        0k used,   976892k free,   224000k cached
+ 
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND                                                                                                                      
+ 2194 admuser   20   0  9652 1368  764 S  0.3  0.3   0:00.01 sshd                                                                                                                         
+ 2298 admuser   20   0  2820 1116  884 R  0.3  0.2   0:00.01 top                                                                                                                          
+    1 root      20   0  3540 1936 1304 S  0.0  0.4   0:00.85 init                                                                                                                         
+    2 root      20   0     0    0    0 S  0.0  0.0   0:00.00 kthreadd                                                                                                                     
+    3 root      20   0     0    0    0 S  0.0  0.0   0:00.69 ksoftirqd/0                                                                                                                  
+    5 root       0 -20     0    0    0 S  0.0  0.0   0:00.00 kworker/0:0H  
+[ ... CUT OUTPUT ...]
+```
+This allows us to see in real time the memory used the process that takes the most resources, the use of the CPU (user (us), System (sy), Change of priority (ni), Waiting (id), Waiting access Input / output (wa), ...)
+
+
+When the top command works, the following letters change its operation:
+* h : show help
+* q : leave the top command
+* M : sort processes by using memory (from the most greedy to the most sober)
+* P : sort the processes by using the processor (from the most greedy to the most sober)
+* s : allows to change the refresh time of top
+* k : sends a signal to a process
+
+
+## Visualization of the files (port, socket, ...) opened by the processes
+lsof allows to see the files opened by the processes, there is a large number of possible argument I will let you the pleasure to discover them I will make a simple presentation to you to look for the rest.
+
+
+If you run lsof as a simple user the process information display will only be the processes you own.
+
+### Différence de lsof simple utilisateur et avec les droits sudo
+
+```
+admuser@srv01:~$ lsof  | wc -l
+320
+admuser@srv01:~$ sudo lsof  | wc -l
+730
+```
+
+Moreover as a simple user you will have several "permission denied".
+
+
+Here is an example of the display for the sshd process with administrator rights:
+
+### lsof sshd
+
+```
+admuser@srv01:~$ sudo lsof  | grep ssh
+sshd       613       root  cwd       DIR        8,1     4096          2 /
+sshd       613       root  rtd       DIR        8,1     4096          2 /
+sshd       613       root  txt       REG        8,1   527680     148233 /usr/sbin/sshd
+sshd       613       root  mem       REG        8,1    47040         91 /lib/i386-linux-gnu/libnss_files-2.15.so
+sshd       613       root  mem       REG        8,1    42652         90 /lib/i386-linux-gnu/libnss_nis-2.15.so
+sshd       613       root  mem       REG        8,1    30520         92 /lib/i386-linux-gnu/libnss_compat-2.15.so
+sshd       613       root  mem       REG        8,1    83776         80 /lib/i386-linux-gnu/libresolv-2.15.so
+sshd       613       root  mem       REG        8,1    13672        796 /lib/i386-linux-gnu/libkeyutils.so.1.4
+[ ... CUT OUTPUT ... ]
+sshd      2194    admuser    1u      CHR        1,3      0t0       5577 /dev/null
+sshd      2194    admuser    2u      CHR        1,3      0t0       5577 /dev/null
+sshd      2194    admuser    3u     IPv4      11607      0t0        TCP 10.0.2.15:ssh->10.0.2.2:47502 (ESTABLISHED)
+sshd      2194    admuser    4u     unix 0xdcf27680      0t0      11636 socket
+sshd      2194    admuser    5u     unix 0xdcf26900      0t0      11849 socket
+sshd      2194    admuser    6r     FIFO        0,8      0t0      11851 pipe
+```
+As you can see we find files but also network connections, sockets, etc.
+
+
+## Understand the load average
+The load average designates, under UNIX systems, an average of the system load, a measure of the amount of work the system does during the period under consideration. This is available via the top or uptime command, or via the system file / proc / loadavg.
+
+
+### example of load average
+
+    load average: 1.27, 0.92, 0.73
+    
+    
+The first number, 1.27, is an average of the load calculated over a minute. The second number is calculated on five minutes, and the third on fifteen minutes. It is a very good indicator of the (over) workload of a system, but does not identify the cause.
+
+
+The load represents the number of processes in use or waiting for the processor plus, under the majority of systems, the number of processes blocked. This makes the interpretation of the number more difficult. The maximum number of processes actually running depends on the number of processors: 1 for a single processor, 2 for a dual processor ... A load of 2 indicates that there is necessarily a process waiting on a single processor, but can be simply two processes running on a dual processor.
+
+
+Case of a single processor, and system optimizations (as opposed to application optimizations, never to neglect)
+* The charge is <1
+
+
+A load <1 indicates that there is not enough process to fully occupy the machine. The "competition" for the processor is therefore non-existent; the latter executes the instructions quickly and is released. A performance problem will therefore certainly come from processing requests that do not reach the machine fast enough.
+
+
+→ To improve performance: perform more simultaneous tasks, increase query throughput ...
+* The charge is constantly at 1
+
+
+A load of 1 constant means that there was always one and only one process in working condition. No process has "waited its turn" to be processed by the processor. However, if there is a single process that constantly occupies the processor, it could possibly run faster on a more powerful processor. Indeed, even if the queue is empty, the process "in progress" may need more speed.
+
+
+→ To improve performance: if there is only one process, add and observe the load. Otherwise, the balance is reached, and more tasks to perform will involve an improvement in processor, memory and / or input-output.
+* The load is greater than 1
+
+This does not necessarily mean that a faster processor would solve the problem. Indeed, the load usually includes processes waiting for input-output. A process in this case will be counted, but it "waits" for an I / O device, not the processor. It is therefore necessary to pay attention to the other displays of the commands like top; where the overall CPU usage is also indicated. If the processor is inactive (idle) at 90% but the load is high, a faster processor will not change anything. If it stays "stuck" at 100% use, then it is certainly in question. (in other words: a load> 1 indicates a contention on the processor only if, and only if, the idle = 0.0)
+
+
+→ To improve performance: Review the overall CPU usage rate. Minimize I / O if possible (is the amount of RAM sufficient?). Then act accordingly on the identified weak points.
+
+

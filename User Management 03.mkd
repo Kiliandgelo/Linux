@@ -1,0 +1,325 @@
+
+# Editing users
+## Editing a user
+
+We have previously seen the creation of a user, I know you will take great care to create your users without error. Users may change during their lifetime as a user, so you must be able to change the user's configuration to meet the new reality. We will see several points such as:
+
+   * the change of password, for the return of holidays
+
+   * changing the personal directory, to have more space where just a reorganization
+
+   * change of primary group
+
+Of course there is more possibility but we will cover the majority of the cases and very often to answer the other situation it is enough to change the argument to the command. For that you do not need me but the man page: D.
+
+### usermod command
+
+so usermod command allows to modify the information of the user, it is advisable to use this command to make your changes and not to modify the files directly, in practice I must admit that I almost never use this command because I'm going to use VI to edit the file and change the configuration. There are advantages to using usermod the latter can perform validations during the parameter change this to make sure that the parameter is appropriate. For example, the system has a configuration file /etc/login.defs that contains the MAX_MEMBERS_PER_GROUP value that limits the number of users in groups. Another advantage is that this allows you to have a command that will give you an error code if a problem occurs and even an explanatory message, this can be a great help.
+
+	
+The use of a text editor to change the settings of a user is dangerous, in addition to risking to make an error on the user being modified you may impact all users with a mistake of handling.
+
+## Modification of his home directory
+
+The user can not modify himself his personal directory this operation is necessarily performed by the administrator of the server of course he can put his files where he has access but his home directory is defined by the admin. Sometimes we have to change a user's home directory to move it partition. For example I have users in the partition / home unfortunately the latter is almost full, I add a disk and mount the new partition of the hard disk on / home2. If we want to move some user here is the operation to do.
+
+### Move a User
+
+```
+# Thom user introduction
+admuser@srv01:~$ ls -la /home/thom/
+total 20
+drwxr-xr-x 2 thom thom 4096 Apr 16 12:18 .
+drwxr-xr-x 5 root root 4096 Apr 16 12:17 ..
+-rw-r--r-- 1 thom thom  220 Apr 16 12:17 .bash_logout
+-rw-r--r-- 1 thom thom 3486 Apr 16 12:17 .bashrc
+-rw-r--r-- 1 thom thom  675 Apr 16 12:17 .profile
+-rw-r--r-- 1 thom thom    0 Apr 16 12:18 un_autre_fichier
+-rw-r--r-- 1 thom thom    0 Apr 16 12:18 un_fichier
+admuser@srv01:~$ getent passwd thom
+thom:x:1001:1001:,,,:/home/thom:/bin/bash
+ 
+# change
+admuser@srv01:~$ sudo usermod -d /home2/thom thom
+ 
+# Validation
+admuser@srv01:~$ getent passwd thom
+thom:x:1001:1001:,,,:/home2/thom:/bin/bash
+ 
+# On the system file
+admuser@srv01:~$ ls -la /home2/thom
+ls: cannot access /home2/thom: No such file or directory
+admuser@srv01:~$ ls -la /home/thom
+total 20
+drwxr-xr-x 2 thom thom 4096 Apr 16 12:18 .
+drwxr-xr-x 5 root root 4096 Apr 16 12:17 ..
+-rw-r--r-- 1 thom thom  220 Apr 16 12:17 .bash_logout
+-rw-r--r-- 1 thom thom 3486 Apr 16 12:17 .bashrc
+-rw-r--r-- 1 thom thom  675 Apr 16 12:17 .profile
+-rw-r--r-- 1 thom thom    0 Apr 16 12:18 anotherFile
+-rw-r--r-- 1 thom thom    0 Apr 16 12:18 aFile
+``` 
+
+As we can see the configuration was unfortunately change, you must create yourself the new directory and copy files. It is possible to perform the operation at once, if you wish:
+
+### change the home and move files
+
+```
+# presentation
+admuser@srv01:~$ getent passwd thomas
+thomas:x:1002:1002:,,,:/home/thomas:/bin/bash
+admuser@srv01:~$ ls -la /home/thomas
+total 24
+drwxr-xr-x 2 thomas thomas 4096 Apr 16 12:23 .
+drwxr-xr-x 6 root   root   4096 Apr 16 12:22 ..
+-rw------- 1 thomas thomas   36 Apr 16 12:23 .bash_history
+-rw-r--r-- 1 thomas thomas  220 Apr 16 12:22 .bash_logout
+-rw-r--r-- 1 thomas thomas 3486 Apr 16 12:22 .bashrc
+-rw-r--r-- 1 thomas thomas  675 Apr 16 12:22 .profile
+-rw-rw-r-- 1 thomas thomas    0 Apr 16 12:23 blabla
+-rw-rw-r-- 1 thomas thomas    0 Apr 16 12:23 un_super_fichier
+ 
+# realization of the operation
+admuser@srv01:~$ sudo usermod -d /home2/thomas -m thomas
+ 
+# validation
+admuser@srv01:~$ getent passwd thomas
+thomas:x:1002:1002:,,,:/home2/thomas:/bin/bash
+admuser@srv01:~$ ls -la /home2/thomas/
+total 24
+drwxr-xr-x 2 thomas thomas 4096 Apr 16 12:23 .
+drwxr-xr-x 3 root   root   4096 Apr 16 12:24 ..
+-rw------- 1 thomas thomas   36 Apr 16 12:23 .bash_history
+-rw-r--r-- 1 thomas thomas  220 Apr 16 12:22 .bash_logout
+-rw-r--r-- 1 thomas thomas 3486 Apr 16 12:22 .bashrc
+-rw-r--r-- 1 thomas thomas  675 Apr 16 12:22 .profile
+-rw-rw-r-- 1 thomas thomas    0 Apr 16 12:23 blabla
+-rw-rw-r-- 1 thomas thomas    0 Apr 16 12:23 un_super_fichier
+admuser@srv01:~$ ls -l /home/thomas
+ls: cannot access /home/thomas: No such file or directory
+``` 
+
+Of course if the user has a lot of data the operation can be long .. the time of the copy, it is possible that this automatic copy is not desired according to the time.
+
+
+## Primary and secondary group change
+
+The modification of the primary group is rather rare, on the other hand the addition of a user in the secondary groups is frequent to offer the access to resources, directories, ... To remember the primary group is the group which will be associated with the file and directory newly created by the user. If I have a user Thom who in the primary group users, by default all the files created by the latter will have the owner Thom and the group owners users, It happens that we wanted to change this group so that the creation of the files is the good ones permissions.
+
+
+We will still use the usermod command to modify the primary group, here is the result with our users Thomas:
+
+
+### modification of the primary group
+
+```
+# visualization of the user Thomas
+admuser@srv01:~$ getent passwd thomas
+thomas:x:1002:1002:,,,:/home2/thomas:/bin/bash
+admuser@srv01:~$ id thomas
+uid=1002(thomas) gid=1002(thomas) groups=1002(thomas)
+ 
+# realization of the operation
+admuser@srv01:~$ sudo usermod -g users thomas
+ 
+# validation
+admuser@srv01:~$ getent passwd thomas
+thomas:x:1002:100:,,,:/home2/thomas:/bin/bash
+admuser@srv01:~$ id thomas
+uid=1002(thomas) gid=100(users) groups=100(users)
+```
+
+For secondary group we will use the options -G (--groups) which will allow us to define a secondary group, by default the option takes the list of groups and the defined as such to the user Add the group disk a the user :
+
+### Adding secondary group.
+```
+# Visualization of the user and the group
+admuser@srv01:~$ id thomas
+uid=1002(thomas) gid=100(users) groups=100(users)
+admuser@srv01:~$ getent group disk
+disk:x:6:
+ 
+# modification of the user
+admuser@srv01:~$ sudo usermod -G disk,adm thomas
+ 
+# visualization of the result
+uid=1002(thomas) gid=100(users) groups=100(users),4(adm),6(disk)
+```
+
+	
+
+If you want to add a new group to a user by keeping the already existing groups it is IMPERATIVE to put the -a (--append) option otherwise the system will delete all the old groups here is an example:
+
+### add secondary group WITHOUT option -a
+
+```
+# without the -a option
+admuser@srv01:~$ sudo usermod -G ssh thomas
+admuser@srv01:~$ id thomas
+uid=1002(thomas) gid=100(users) groups=100(users),108(ssh)
+ 
+# you have lost all of the groups present.
+ 
+# with the -a option
+admuser@srv01:~$ sudo usermod -a -G ssh thomas
+admuser@srv01:~$ id thomas
+uid=1002(thomas) gid=100(users) groups=100(users),4(adm),6(disk),108(ssh)
+ 
+# the specify group is simply added
+``` 
+
+## Password change
+
+Let's leave a little usermod to talk about passwd, we had already mentioned this command, so this is a simple reminder, to change his password or that of another user we use the command passwd. When this command is started if there is no user name provides the system changes the password of the user who executes it. Here are some examples of use:
+
+### change password
+
+```
+# change password of peter
+admuser@srv01:~$ sudo passwd peter
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+ 
+# change of your own password
+admuser@srv01:~$ passwd
+Changing password for admuser.
+(current) UNIX password: 
+Enter new UNIX password: 
+Retype new UNIX password: 
+passwd: password updated successfully
+```
+	
+I invite you to consult the man page as always there are sometimes interesting options, when writing this training I see that it is possible to pass the option -S to have a status of the password for a user. With the -a option it is possible to have this information for all users, here is an example of the result:
+
+### example info password.
+
+
+    admuser@srv01:~$ sudo passwd -S thomas
+    homas NP 04/16/2022 0 99999 7 -1
+
+I do not give you the definition I leave you the pleasure of the man page 😉
+
+## Deleting a user
+
+Just like for the creation of the user we find 2 commands userdel and deluser. Following the same concept as when creating users the userdel command corresponds to the "original" command available on all Unix machines, while deluser is a wrapper that performs validations is additional operations. Here are some examples of the use of the 2 commands:
+
+### User delete with userdel
+
+
+ ```
+# Viewing users.
+thom:x:1001:1001:,,,:/home2/thom:/bin/bash
+thomas:x:1002:100:,,,:/home2/thomas:/bin/bash
+ 
+# Viewing the home directory of thom
+admuser@srv01:~$ ls -la /home2/thom
+total 20
+drwxr-xr-x 2 thom thom 4096 Apr 23 12:29 .
+drwxr-xr-x 4 root root 4096 Apr 23 12:28 ..
+-rw-r--r-- 1 thom thom  220 Apr 23 12:29 .bash_logout
+-rw-r--r-- 1 thom thom 3486 Apr 23 12:29 .bashrc
+-rw-r--r-- 1 thom thom  675 Apr 23 12:29 .profile
+ 
+# delete thom with userdel
+ 
+admuser@srv01:~$ sudo userdel thom
+admuser@srv01:~$ id thom
+id: thom: No such user
+admuser@srv01:~$ getent passwd thom
+admuser@srv01:~$ ls -la /home2/thom
+total 20
+drwxr-xr-x 2 1001 1001 4096 Apr 23 12:29 .
+drwxr-xr-x 4 root root 4096 Apr 23 12:28 ..
+-rw-r--r-- 1 1001 1001  220 Apr 23 12:29 .bash_logout
+-rw-r--r-- 1 1001 1001 3486 Apr 23 12:29 .bashrc
+-rw-r--r-- 1 1001 1001  675 Apr 23 12:29 .profile
+``` 
+
+As you can see thom was delete however the personal directory of the latter is still present AND the files of which he was the owner are still present, the association between the UID and the name Thom no longer exists so we have the UID of indicated (lines 23 to 27).
+
+	
+
+This information is important, if you deleted a user and you reuse the same UID for the new user, you must make sure that the old files associated with the delete user were copied or deleted in a safe place so that the new user can it is not the right by default to consult it. It is possible to use the find command by using the UID as the criteria like this:
+
+### example search find uid
+
+```
+admuser@srv01:~$ find /home2/ -uid 1001 
+/home2/thom
+/home2/thom/.bash_logout
+/home2/thom/.profile
+/home2/thom/.bashrc
+``` 
+
+## Using the deluser command
+
+Now let's see the behavior with deluser we will delete the other user listed either thomas.
+
+### use of deluser
+```
+# User visualization
+admuser@srv01:~$ getent passwd |grep thomas
+thomas:x:1002:100:,,,:/home2/thomas:/bin/bash
+ 
+# Personal directory
+admuser@srv01:~$ ls -la /home2/thomas
+total 24
+drwxr-xr-x 2 thomas users 4096 Apr 16 12:23 .
+drwxr-xr-x 4 root   root  4096 Apr 23 12:28 ..
+-rw------- 1 thomas users   36 Apr 16 12:23 .bash_history
+-rw-r--r-- 1 thomas users  220 Apr 16 12:22 .bash_logout
+-rw-r--r-- 1 thomas users 3486 Apr 16 12:22 .bashrc
+-rw-r--r-- 1 thomas users  675 Apr 16 12:22 .profile
+-rw-rw-r-- 1 thomas users    0 Apr 16 12:23 blabla
+-rw-rw-r-- 1 thomas users    0 Apr 16 12:23 un_super_fichier
+ 
+# delete
+admuser@srv01:~$ sudo deluser thomas
+Removing user `thomas' ...
+Warning: group `users' has no more members.
+Done.
+ 
+ 
+# personal directory
+admuser@srv01:~$ ls -la /home2/thomas
+total 24
+drwxr-xr-x 2 1002 users 4096 Apr 16 12:23 .
+drwxr-xr-x 4 root root  4096 Apr 23 12:28 ..
+-rw------- 1 1002 users   36 Apr 16 12:23 .bash_history
+-rw-r--r-- 1 1002 users  220 Apr 16 12:22 .bash_logout
+-rw-r--r-- 1 1002 users 3486 Apr 16 12:22 .bashrc
+-rw-r--r-- 1 1002 users  675 Apr 16 12:22 .profile
+-rw-rw-r-- 1 1002 users    0 Apr 16 12:23 blabla
+-rw-rw-r-- 1 1002 users    0 Apr 16 12:23 un_super_fichier
+``` 
+
+Well it's not bad now users are removed from groups to which he was a member but the personal directory is still present! The big advantage of the deluser command is the ability to delete files from the home directory and also make a backup of these files here is an example with the user Robert
+
+### use of deluser with backup
+```
+# visualization
+admuser@srv01:~$ getent passwd robert
+robert:x:1003:1003:Robert Nesta Marly,,,:/home/robert:/bin/bash
+ 
+admuser@srv01:~$ ls -la /home/robert/
+total 20
+drwxr-xr-x 2 robert robert 4096 Apr 23 12:49 .
+drwxr-xr-x 7 root   root   4096 Apr 23 12:40 ..
+-rw-r--r-- 1 robert robert  220 Apr 23 12:40 .bash_logout
+-rw-r--r-- 1 robert robert 3486 Apr 23 12:40 .bashrc
+-rw-r--r-- 1 robert robert  675 Apr 23 12:40 .profile
+-rw-r--r-- 1 robert robert    0 Apr 23 12:49 Rastaman
+-rw-r--r-- 1 robert robert    0 Apr 23 12:49 music-is-the-key
+ 
+# delete with backup
+admuser@srv01:~$ sudo deluser --remove-home --backup-to /home/admuser/backup-homeusers/ robert
+Looking for files to backup/remove ...
+Backing up files to be removed to /home/admuser/backup-homeusers/ ...
+backup_name = /home/admuser/backup-homeusers//robert.tar
+/bin/tar: Removing leading `/' from member names
+Removing files ...
+Removing user `robert' ...
+Warning: group `robert' has no more members.
+Done.
+``` 

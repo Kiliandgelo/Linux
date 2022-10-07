@@ -1,0 +1,28 @@
+# Repository Administration
+## Quick return
+Whether we are talking about redhat or ubuntu the concept is the same, we have a package system that manages the integrity of software and files:
+
+* It validates that 2 package does not install the same files this causes a conflict
+* it indicates if to install a software package it is necessary, in order to ensure the proper functioning of the application.
+  * WARNING: The package system rpm or dpkg does not solve the dependencies, the latter is NOT able to communicate on the internet.
+* it ensures the integrity of the package if the file rpm or deb has a problem the latter will signal it and will not install the software
+* it can validate the source of the package, all the packages are signed by the person who creates it with a key gpg rpm / dpkg little realized the validation
+* it validates that the package is good for our architecture.
+* dpkg or rpm can execute pre and post installation scripts to perform operations such as creating a user for the service or key generation for the application. These same script exists for the removal of the software
+* rpm allows a check of the post-installation files, in order to know if it was modified by an administrator.
+
+
+On top we have a system that can communicate on the internet to get the software. In both yum and apt- * are only intermediaries to search the internet for RPM or deb files.
+
+
+Installation situation of a software:
+* search for the software on the internet: yum search vlc or apt-cache search vlc
+* we find that the software is available we install it:
+
+
+      yum install vlc ou apt-get install vlc
+
+* the vlc rpm or deb file is parsed in order to know the dependencies yum or apt-get lists the dependent packages and also downloads them.
+* once all the files download, rpm or dpkg takes over and install the packages. It is possible that at this point a problem occurs if there is a file conflict or if the package downloads is corrupted, ....
+* When updating this is equivalent, yum or apt-get realizes the difference between the installed package and those available. When activating the update, the package files are downloaded and installed by the local application, so rpm or dpkg.
+

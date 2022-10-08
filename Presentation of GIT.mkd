@@ -1,0 +1,1366 @@
+#Presentation of GIT
+* Introduction
+  * The good old method
+  * Centralized version management systems
+  * Distributed version management systems
+  * Filing and modification process
+  * It's all beautiful, but for administrators ??
+* Git
+  * The three states
+  * Creating a local repository (new and recovering an existing repository)
+    * Initializing a new local repository
+    * Recovery of an existing depot
+  * Configuration of git
+    * Configuring the user name
+    * Editing configuration
+  * Handling the repository
+    * adding
+    * Ignore files
+    * Deleting and renaming
+    * visualization
+    * Going back
+      * Rectification of the last commit
+      * Amend (fix last commit)
+    * Canceling changes to a file
+    * reset
+    * Revert  
+    * Checkout in a past commit
+  * Branch manipulation
+    * Branches concept
+      * Branch creation
+      *  Change branch
+    * Example of use of branches:
+    * Merge branches
+    * Deleting a branch
+    * Merge non-sequential branches
+    * Merge conflict management ("merge")
+  * Work with a remote repository
+* Unprocessed functionality here
+* Reference:
+
+## Introduction
+Version Control System (VCS) is software that stores a set of files, keeping the timeline of all the changes that have been made to them. It allows to find the different versions of a batch of related files. The system records the evolution of a file or set of files over time so that an earlier version of a file can be recalled at any time.
+
+
+There is Distributed Version Control System (Distributed Version Control System) software and services. Git and Mercurial are two examples of decentralized versioning software and are available on most Unix and Windows systems. You also have centralized version management software such as SVN that requires a server to keep files and manage conflicts.
+
+
+If you are a draftsman or a web developer, and want to keep all versions of an image or layout (which you would certainly like), a Version Control System (VCS) for Version Control System) is a tool that is very wise to use. It allows you to bring a file back to a previous state, bring the entire project back to a previous state, view changes over time, see who has changed something that might cause a problem, who has introduced a problem, and when, and more. Using a VCS also usually means that if you make a mistake or lose files, you can easily return to a stable state. Plus, you get all these benefits with little additional work.
+
+## The good old method
+The historical method for versioning is usually to copy the files to another directory (perhaps with a name including the date in the best case). This method is the most common because it is the simplest, but it is also the least reliable. It's easy to forget the directory you're in and accidentally write to the wrong file or overwrite files you want to keep.
+
+
+This method has several shortcomings, the "backup" file is often copied to a temporary directory, so sometimes deleted when cleaning the file system. If the file is put next to the original with a date such as httpd.conf and httpd.conf-2015-06-06 we have a proliferation of files in the same directory which does not facilitate the visualization of the configuration files . Worse if we do not have the date and only .bak extensions, .bak2, ... We do not have a clear history of changes made over time, nor who made these changes. If I'm referring to who, it's not just to blame the person, but to understand the origin of the change that is causing me a problem today.
+
+## Centralized version management systems
+The major problem that people face is that they need to collaborate with developers on other computers. To address this problem, Centralized Version Control Systems (CVCS) were developed. These systems such as CVS, Subversion, and Perforce, set up a central server that contains all files under versioning, and clients that can extract files from this central repository. For many years, this has been the standard for version management.
+ 
+ 
+This scheme offers many advantages over local version management. For example, everyone knows to a certain extent what everyone else is doing on the project. Administrators have fine control of permissions and it is much easier to administer a CVCS than managing local databases.
+
+
+However this system also has many defects. The most visible is the single point of failure that the centralized server represents. If this server is down for an hour, then during this time, no customer can collaborate or save the changes from his work. Once you have all the history of a project saved in a single place, you risk losing everything.
+
+
+## Distributed version management systems
+This is where Distributed Version Control Systems (DVCS) come into play. In a DVCS (such as Git, Mercurial, Bazaar, or Darcs), clients no longer extract only the latest version of a file, but they completely duplicate the repository. Thus, if the server disappears and the systems collaborate via this server, any repository of one of the clients can be copied to the server to restore it. Each extraction becomes a complete backup of all data.
+ 
+ 
+## Repository and modification process
+The versioned files are made available on a repository, that is to say a public storage space managed by a version control software.
+
+
+In order to make changes, the developer must first make a local copy of the files he wants to modify, or the entire repository. Depending on the versioning systems, some files may be locked or write-protected for everyone, or for some people.
+
+
+The developer makes these modifications and performs his first tests locally, regardless of the modifications made to the repository due to the simultaneous work of other developers. He must then make a commit, that is to say submit his changes, so that they are registered on the deposit. This is where there may be conflicts between what the developer wants to submit and changes made since the last local copy was made. These conflicts must be resolved (merge) for the patch to be accepted on the repository.
+
+
+## It's all beautiful, but for administrators ??
+When talking about revision controller the literature mainly refers to the use of system for developers. For the system administrator the need is the same, we need to know:
+* the history of a file
+* when the latter was modified
+* what are the differences between the date T and T '
+* why the file was modified, by whom
+* to be able to return to a previous configuration state for a given date.
+
+
+Where there may be a major divergence is that we have less risk of configuration conflict because fewer people are working on the files. Moreover it is more rare that we are several to modify the same files on the server. Another main difference and version management, we often stay at version 1, mainly because it is less relevant to create versions such 1.2 or 2.3, although I imagine that for larger systems the fact of identifying the version of server with the software version deploy can be interesting.
+
+
+The centralization of the configurations is not critical or indispensable although ... I explain myself, as the configuration of a machine is less propagated than the source code of an application having the revision of the code only Locally on the machine is less critical. On the other hand, the fact of not having a revision controller server makes sure that there is no copy of the repository apart from the one on the server. Moreover if you want to refer to it it is mandatory to connect to the machine, that's why I think having a server containing deposits is interesting without being mandatory this depends on the size of your organization.
+
+
+In the rest of the demonstration I will mainly only use a local repository without a server and in the end I will show an example of a centralized server.
+
+## Git
+The major difference between Git and other VCS (Subversion and others) is how Git looks at the data. Conceptually, most other VCSs manage the information as a list of file changes. These systems (CVS, Subversion, Perforce, Bazaar and others) consider the information they manage as a list of files and changes made to each file over time, as shown.
+ 
+ 
+Git does not manage and store information in this way. Instead, Git thinks his data more like a snapshot of a mini file system. Whenever you validate or save the project status in Git, it actually takes a snapshot of your workspace content at that time and saves a reference to that snapshot. To be effective, if the files have not changed, Git does not store the file again, just a reference to the original file that has not been modified. Git thinks her data more in the way below.
+ 
+ 
+In Git, everything is checked by a checksum before being stored and later this checksum, unique signature, serves as a reference. This means that you can not change the contents of a file or directory without Git noticing it. This feature is anchored in Git's foundations and is an integral part of its philosophy. You can not lose data being transferred or corrupt a file without Git being able to detect it.
+
+
+## The three states
+Git manages three states in which the files can reside: validated, modified and indexed.
+* Validated means that the data is stored securely in your local database.
+* Modified means that you have modified the file but it has not been validated in base yet.
+* Indexed means that you have marked a modified file in its current version so that it is part of the next snapshot of the project.
+
+This leads to the three main sections of a Git project: the Git directory, the working directory, and the index area.
+
+
+The .git directory is where Git stores the metadata and object database of your project. This is the most important part of Git, and that's what is copied when you clone a repository from another computer.
+
+
+The working directory is a single extraction of a version of the project. These files are extracted from the compressed database into the Git directory and placed on the disk for use or modification.
+
+
+The index area is a simple file, usually located in the Git directory, that stores information about what will be part of the next snapshot.
+
+
+The standard use of Git is as follows:
+* you edit files in your working directory
+* you index modified files, which adds snapshots of those files to the index area;
+* you validate, which switches the snapshots of the index files into the Git directory database.
+
+
+## Creating a local repository (new and recovering an existing repository)
+
+### Initializing a new local repository
+We will start with the creation of a new Git repository on the local system.
+
+* Move to the directory that will contain the Git project, which may or may not contain files
+1. use the git init command to initialize the repository, this will create a .git directory in the current directory containing the repository skeleton because no files are versioned. (if you want to know what is in this directory in detail see the guts of git)
+
+        $ git init
+
+2. We will add files so that it is versioned we will use the git add command.
+
+        $ git add *.c $ git add README
+
+3. Once the identification of the files to be added in the revision control we push this information into the Git repository, along with a message indicating the reason for the operation.
+
+        $ git commit –m 'initial version of my project'
+
+
+## Recovery of an existing repository
+To retrieve an existing repository we have to use the git clone command, when cloning Git receives a copy of almost all the data the server has. All versions of all files for the project history are downloaded. If the server disk corrupts, you can use any clone to return the server to the state it was at the time of cloning (you might lose some server settings, but all the data under versioning would be recovered .
+
+
+This is an important feature because unlike a centralized revision control system when we are going to query the history of a Git file does not query the central server, but consults that local copy.
+
+
+Let's go to the practical step with the recovery of the deposit that I use for the preparation of this training available on GitHub.
+1. You place in a directory that will contain the repository
+2. Using the git clone command to extract.
+
+
+        $ git clone https://github.com/patapouf/training.git
+        
+        
+3. This will have the effect of creating a training directory in the current directory, if you want to have another name you must pass in parameter the name of the remote directory as shown below, this will create the training directory.
+
+
+        $ git clone https://github.com/patapouf/training.git formation
+        
+        
+4. All as when initializing the local repository you will have a .git directory in the training or training directory containing the repository information with all the history of the versioned files.
+
+
+In the example above I'm demonstrating with a public repository the order is equivalent when using a private repository, git clone will ask you for a username and password.
+
+
+## Configuration of git
+There is 3 level of configuration:
+* System / system: This configuration is global for the entire machine for all users, the configuration file is: / etc / gitconfig.
+* Global / global: This configuration is global for the user who runs git, this applies for all the repositories used by the user. The configuration file is: ~ / .gitconfig
+* By repository: All repositories include a configuration file under the /path/repo/.git/config directory.
+
+
+The reading of the configuration files is the most specific hierarchy to the last word on the value of the variable. Of course to be able to modify the system configuration you must have the permissions on the file in the directory etc.
+
+
+## Configuring the user name
+A classic configuration and even required by git is the identification of the user, so we will see how configuration for the user's username and email globally. To do this we will use git config --global
+
+
+    $ git config --global user.name "Robert Nesta (Bob) Marley"     
+    $ git config --global user.email Bob@patapouf.com
+
+
+The result is the creation of the file in the user's home:
+
+    $ cat ~/.gitconfig     
+    [user]               
+    email = Bob@patapouf.com            
+    name = Robert Nesta (Bob) Marley    
+    
+    $ git config -l    
+    user.email=Bob@patapouf.com    
+    user.name=Robert Nesta (Bob) Marley
+
+
+If I do not put the glocal identifier in this case we will modify the configuration of the repository in use, if I take the repository previously created. I will move to the repository directory:
+   
+```
+   $ cd depot     
+   $ git config -l     
+   user.email=Bob@patapouf.com     
+   user.name=Robert Nesta (Bob) Marley     
+   core.repositoryformatversion=0     
+   core.filemode=true    
+   core.bare=false     
+   core.logallrefupdates=true     
+   
+   $ git config user.name "John Doe"     
+   $ git config -l     
+   user.email=Bob@patapouf.com     
+   user.name=Robert Nesta (Bob) Marley     
+   core.repositoryformatversion=0     
+   core.filemode=true     
+   core.bare=false     
+   core.logallrefupdates=true     
+   user.name=John Doe
+```
+
+The name of the user who made the commits will now be John Doe instead of Robert Nesta Marley only for this repository, having not redefined the email address the "global" value will be used.
+
+## Editor configuration
+In addition to identifying oneself, it is important to have one's favorite editor! So VIM or emacs, we will fight to say who is the best editor: P. By default git chose the good one, so VIM, for the people who wishes to have emacs here the instruction:
+ 
+ 
+    $ git config --global core.editor emacs
+    
+    
+I strongly urge you to look at the other options available on the page: Customizing Git
+
+
+## Handling the repository
+We will now see how to concretely use the git system with the help of example, this is an introduction, it is possible to go much further, I invite you if the subject interests you to continue ...
+
+
+I will initialize a new repository and define a README file.
+
+```
+    $ mkdir demo-git      
+    $ ls -a      
+    .  
+    ..    
+    
+    $ git init     
+    Initialized empty Git repository in /home/bob/git/demo-git/.git/     
+    
+    $ ls -a      
+    .  
+    ..  
+    .git     
+    
+    $ echo " Demonstration of GIT " > README    
+    $ git add README     
+    $ git commit -m " First commit with the README file"     
+    [master (root-commit) f044b87]  
+    First commit with the README file     
+    1 file changed, 1 insertion(+)      
+    create mode 100644 README
+```
+
+This is the first commit with an Indexed file.
+
+
+We will see the life cycle of a file as represented by the image below.
+ 
+## adding
+Validate the state of the repository with git status
+   
+   
+    $ git status    
+    On branch master     
+    nothing to commit, working directory clean
+
+
+Good all is perfect: D, as the message says: working directory clean, for the part of the branch we will come back to it later.
+
+
+If we add a file the message will be different telling us that the new file is not overhauled.
+    
+    
+    $ echo "new file,  README but japanese  " > README_JP    
+    $ git status      
+    On branch master    
+    Untracked files:       
+    (use "git add ..." to include in what will be committed)          
+    README_FR     
+    nothing added to commit but untracked files present (use "git add" to track)
+
+
+The system tells us the presence of the new file but the repository does not keep the file history. As the message indicates and as we already did for the README file we will use the git add command to add the file.
+ 
+     $ git add README_JP     
+     $ git status     
+     On branch master     
+     Changes to be committed:     
+     (use "git reset HEAD ..." to unstage)            
+     new file:   README_JP
+
+At this point the file is indexed, in staged mode in the diagram presented earlier, when the files will be validated commit then file will be placed in the Git repository, with all other files in the index or "staged".
+
+
+In the case of a file already present in the repository such as README if we make a modification in the file and that we display the state of the repository.
+   
+   
+    $  echo "New file in README " >> README     
+    $ cat README    
+    Demonstration of GIT      
+    New file in README    
+    
+    $ git status     
+    On branch master     
+    Changes to be committed:       
+    (use "git reset HEAD ..." to unstage)              
+    new file:   README_JP     
+    Changes not staged for commit:       
+    (use "git add ..." to update what will be committed)      
+    (use "git checkout -- ..." to discard changes in working directory)              
+    modified:   README
+
+
+I will not get you a translation of the message, basically after making a modification on a file to put it in indexed state so staged we should realize the command git add again on the file. This will cause the README file, which was already overhauled during the initialization of the repository, to be put into the Indexed state for staging the next validation. We would therefore:
+  
+  
+      $ git add README    
+      $ git status      
+      On branch master     
+      Changes to be committed:     
+      (use "git reset HEAD ..." to unstage)         
+      modified:   README         
+      new file:   README_JP
+
+We will validate the commit files to see the purpose of the file states
+   
+   
+      $ git commit -m "demonstration adding file and modification of file"     
+      [master 3bb562a]   demonstration adding file and modification of file    
+      2 files changed, 2 insertions(+)     
+      create mode 100644 README_JP     
+      
+      $ git status      
+      On branch master     
+      nothing to commit, working directory clean
+
+
+Back to a clean repository because all files placed in the staged state are now validated in the Git repository.
+
+
+I doubt what you're saying, it's really heavy to be forced to do git add every time I modify a file to put it in the index for the next commit. Must be seen as a security system especially if you handle critical production files. Indeed if you make a modification of several files, as is the case during application development this operation can be perceived as tedious.
+
+
+The solution is to use the -a option during commit validation. Demonstration:
+
+
+    $ echo "New modification with option -a " >> README     
+    
+    bob@patapouf:~/git/demo-git$ git status     
+    On branch master     
+    Changes not staged for commit:       
+    (use "git add ..." to update what will be committed)       
+    (use "git checkout -- ..." to discard changes in working directory)             
+    modified:   README    
+    no changes added to commit (use "git add" and/or "git commit -a")     
+    
+    $ git commit -a -m "Demontration we dont need to add for modify a file"       
+    [master 94e83f3] Demontration we dont need to add for modify a file      
+    1 file changed, 1 insertion(+)
+
+
+CAUTION: this only works if the file was added to the repository otherwise you will get an error message
+
+
+    $ touch ANewFile 
+    
+    $ git status     
+    On branch master     
+    Untracked files:    
+    (use "git add ..." to include in what will be committed)       
+    ANewFile     
+    nothing added to commit but untracked files present (use "git add" to track)     
+    
+    $ git commit -a -m " Test adding new file that wasnt in depot"  
+    On branch master     
+    Untracked files:               
+    ANewFile    
+    nothing added to commit but untracked files present    
+    
+    $ git status    
+    On branch master     
+    Untracked files:       
+    (use "git add ..." to include in what will be committed)            
+    ANewFile    
+    nothing added to commit but untracked files present (use "git add" to track)
+
+
+For people who already use Git now you know why you need to put the -a option, you will now do it knowingly not just because the message suggests it to you.
+
+## Ignore files
+It's nice that Git tells us which files are not indexed or not, however it is possible that files are in the directory but that we do not want to have in the repository. The reasons are many, starting because we do not want: P or it is files that are generated during use, such as Vim .swp files, .so files during the compilation of programs ...
+
+
+To fix the problem we can define a file named .gitignore, here is the structure:
+
+* #: to set comments
+* Using regular expressions to define files
+* if there is use of the character! it is possible to invalidate the other rules and thus to ensure that the file is overhauled.
+* If there is a / at the end this indicates that we are talking about a directory
+
+
+Here is a very simple example if we want to ignore .dtd files
+  
+  
+     $ touch data_generate.dtd     
+     $ touch scrubble_data.dtd     
+     $ git status    
+     On branch master     
+     Untracked files:       
+     (use "git add ..." to include in what will be committed)            
+     data_generate.dtd            
+     scrubble_data.dtd     
+     
+     $ vim .gitignore     
+     # Exclusion des fichier .dtd     
+     *.dtd    
+     
+     $ git status    
+     On branch master     
+     Untracked files:       
+     (use "git add ..." to include in what will be committed)        
+     .gitignore     
+     nothing added to commit but untracked files present (use "git add" to track)
+
+
+We no longer have the presence of .dtd files, of course we have the file .gitignore that we will probably want to define in the repository because if the file is relevant to us it probably for all employees.
+   
+   
+      $ git add .gitignore      
+      $ git status    
+      On branch master     
+      Changes to be committed:      
+      (use "git reset HEAD ..." to unstage)            
+      new file:  .gitignore     
+      
+      $ git commit -m " Add file for ignore generated files"     
+      [master 1b7ba93]  Add file for ignore generated file     
+      1 file changed, 2 insertions(+)      
+      create mode 100644 .gitignore     
+      
+      $ git status    
+      On branch master      
+      nothing to commit, working directory clean
+
+
+Here is an example of another very informative .gitignore file:
+   
+   
+      # This line is ignored    
+      # no file .a     
+      *.a     
+      # but follow lib.a despite previous rule    
+      !lib.a     
+      # ignore only the file ToDo at the root of the project     
+      /ToDo     
+      # ignore all the file in the build repertory    
+      build/    
+      # ignore doc/notes.txt, but dont ignore doc/server/arch.txt     
+      doc/*.txt     
+      # ignore all files .txt in doc/     
+      doc/**/*.txt
+
+
+## Deleting and renaming
+To delete a Git file, you must delete it from the version tracking files (more precisely, delete it in the index area) and validate. The git rm command performs this action, but also deletes this file from your working copy so that you will not see it reappear as a non-tracked version at the next commit.
+
+
+Demonstration, let's add a file to delete it later:
+   
+   
+    $ echo "wrong contain " >> wrongFile   
+    $ git add wrongFile   
+    git commit -m "add file for delete it  "   
+    [master 2b89a72] add file for delete it   
+    1 file changed, 1 insertion(+)      
+    create mode 100644 wrongFile
+
+
+Let's delete:
+
+    $ git rm wrongFile      
+    rm 'wrongFile'    
+    $ ls     
+    README  README_JP  data_generate.dtd  scrubble_data.dtd    
+    
+    $ git status     
+    On branch master     
+    Changes to be committed:      
+    (use "git reset HEAD ..." to unstage)             
+    deleted:   wrongFile   
+    
+    $ git commit -m " deleting of a file "     
+    [master 4df0865]  deleting of a file   
+    1 file changed, 1 deletion(-)     
+    delete mode 100644 wrongFile  
+    
+    $ git status     
+    On branch master     
+    nothing to commit, working directory clean
+
+
+For the recovery of a deleted file in the repository but which was finally important we will see later, for people in a hurry to see here Back
+
+
+Unlike other VCS, Git does not explicitly follow file movements. If you rename a file followed by Git, no meta-data indicating the renaming is stored by Git. Nevertheless, Git is clever enough to notice this after the fact - the file movement detection will be processed later.
+  
+  
+      $ git mv README_JP GettingStartHere      
+      $ git status     
+      On branch master     
+      Changes to be committed:       
+      (use "git reset HEAD ..." to unstage)               
+      renamed:    README_JP -> GettingStartHere   
+      
+      $ git commit -m " Change name README_JP for GettingStartHere"    
+      [master 41a1679]  Change name README_JP for GettingStartHere     
+      1 file changed, 0 insertions(+), 0 deletions(-)      
+      rename README_JP => GettingStartHere (100%)
+
+
+Of course to save this change you will have to use the command git commit to validate the change.
+
+## Visualization
+
+The main advantage of the revision control management system is to be able to view changes over time and to go back. We have just visualized how to create a repository, and validate our modifications it is time to visualize our modifications in time. In order to demonstrate, I will use a public repository that already contains several commit. Let's proceed with cloning the glpi-nwipe repository 
+    
+    
+    $ cd ~/git/    
+    
+    $ git clone https://github.com/patapouf/glpi-nwipe.git    
+    Cloning into 'glpi-nwipe'...    
+    remote: Counting objects: 77, done.     
+    remote: Total 77 (delta 0), reused 0 (delta 0), pack-reused 77   
+    Unpacking objects: 100% (77/77), done.     
+    Checking connectivity... done.     
+    
+    $ cd glpi-nwipe
+
+
+For information this repository is a set of script that allows with a PXE server to remove all the contents of a hard disk with nwipe the equivalent of the application dban then changes the configuration in GLPI so that the status of the machine be consistent. If you want more information we can talk about it outside of this training.
+
+
+We will now use the git log command, to visualize all the validations (commit) that were made. Here is the result of the order for the glpi-nwipe deposit
+  
+  
+      $ git log     
+      commit 27b3d4550df9c8da87861fe68d2ab929319d83fe    
+      Author: bob <bob@patapouf.com>     
+      Date:   Wed May 27 16:05:30 2022 -0400           
+      Update LICENSE.md            
+      Add Licence    
+      commit 349541d3272da9f1cf9845ccfe498c957801f1a1     
+      Author: bob <bob@patapouf.com>     
+      Date:   Wed May 27 16:12:28 2022 -0400             
+      adjust documentation   
+      commit 9c607e8dd1792c91bafa27947930ae714dd071ee     
+      Author: bob <bob@patapouf.com>      
+      Date:   Wed May 27 15:58:06 2022 -0400             
+      adjust publication  github     
+      commit b1b5cdff8cac093101629c830851a4de2ab05ccf     
+      Author: bob <bob@patapouf.com>     
+      Date:   Wed May 27 15:52:16 2022 -0400            
+      Correction print python3     
+      commit ac0a04f1776fc8b83e7bf411dde3d5a315351fcd     
+      Author: bob <bob@patapouf.com>      
+      Date:   Mon Mar 2 17:43:15 2022 -0500             
+      Add documentation setup     
+      [ ... Trunk ... ]     
+      [ ... Trunk ... ]
+
+
+We see all the commits with:
+* the name of the person making the change
+* The date of the change
+* the comment that the person left during the validation
+* A 41 character commit identification number
+
+
+It is possible to visualize the files which were modified during the validation (commit) with the pluses and the minus, with the argument stat
+
+
+    $ git log --stat     
+    commit 27b3d4550df9c8da87861fe68d2ab929319d83fe    
+    Author: bob <bob@patapouf.com>     
+    Date:   Wed May 27 16:05:30 2022 -0400        
+    Update LICENSE.md     
+    Add Licence       
+    LICENSE.md | 674 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++     
+    1 file changed, 674 insertions(+)    
+    commit 349541d3272da9f1cf9845ccfe498c957801f1a1    
+    Author: bob <bob@patapouf.com>       
+    Date:   Wed May 27 16:12:28 2022 -0400        
+    adjust documentation  
+    README             |  0      README.md          | 20 ++++++++++----------      
+    Setup_DHCP.md      |  4 ++--      Setup_PXEserver.md | 11 +++++++++--      
+    4 files changed, 21 insertions(+), 14 deletions(-)    
+    [ ... Trunk ... ]     
+    [ ... Trunk ... ]
+    
+
+Let's go even further with all the details of the changes with the -p option, it is possible to pass a number to display only the # commit.
+
+
+    $ git log -p      
+    [ ... Trunk ... ]     
+    [ ... Trunk ... ]    
+    commit 349541d3272da9f1cf9845ccfe498c957801f1a1    
+    Author: bob <bob@patapouf.com>       
+
+
+    Date:   Wed May 27 16:12:28 2022 -0400         
+    adjusting documentation     
+    diff --git a/README b/README     
+    deleted file mode 100644    
+    index e69de29..0000000    
+    diff --git a/README.md b/README.md        
+    adjust documentation   
+    diff --git a/README b/README     
+    deleted file mode 100644     
+    index e69de29..0000000     
+    diff --git a/README.md b/README.md     
+    index d0d0253..064948b 100644     
+    --- a/README.md     
+    +++ b/README.md     
+    @@ -2,26 +2,27 @@         
+    Japanese version available here : README-FR.md         
+    -This script was originaly created when we had to wipe hundred computers and          
+    -update the inventory system (GLPI -> URL-project) with the new status.           
+    +This script was originally created when we had to wipe hundred computers and           
+    +update the inventory system (GLPI : http://www.glpi-project.org) with the new status.          
+    -We used the  dban cd (URL-project) for one or two computer it's ok , and manually updated the        
+    -GLPI web site.          
+    +Boot with the  dban cd (http://www.dban.org) and manually updated GLPI, it's ok for         
+    +one or two computer but after ...      
+    [ ... Trunk ... ]  .
+
+
+This is for the command line of course there are also graphical applications
+* gitk: Official version of git, not very beautiful but effective: D
+*  giggle: gnome version http://live.gnome.org/giggle
+* gitg: Another version of gnome http://wiki.gnome.org/Apps/Gitg
+
+
+I am not saying that those named above are the best ones for the moment personally I only use gitk, if you know of any other nice and mostly free, do not hesitate to share it with me: D.
+
+
+## Going back
+Another advantageous point with the use of a revision manager is the revision side: P and the possibility of having a rollback. This is an important safety net! I strongly advise you to be comfortable with your Revision Manager system for backtracking, this will be a major asset for you. Well done the blah we go in the thick of it.
+
+
+Let's start with the visualization of the state of our deposit (glpi-nwipe):
+
+
+    $ git status    
+    On branch master    
+    Your branch is up-to-date with 'origin/master'.     nothing to commit, working directory clean
+
+
+Let's see the latest commit
+   
+   
+    $ git log --pretty=oneline     
+    27b3d4550df9c8da87861fe68d2ab929319d83fe Update LICENSE.md    
+    349541d3272da9f1cf9845ccfe498c957801f1a1 adjust more documentation instructions for install  
+    9c607e8dd1792c91bafa27947930ae714dd071ee  adjust publication on github
+
+
+We will make some modifications, to handle all.
+
+## Rectification of the last commit
+### Amend (fix last commit)
+
+Let's start with the fix of the last commit, in case you make a commit and that you notice that you have forgotten a file or that the comment is wrong. The --amend command allows us to rectify the last commit. Here is an example of use on the local glpi-nwipe repository:
+    
+    
+    $ # Edition  File README.md     
+    $ vim  README     
+    $ git diff     
+    git diff    
+    diff --git a/README.md b/README.md    
+    index 064948b..8f74c4a 100644     
+    --- a/README.md     
+    +++ b/README.md     
+    @@ -5,7 +5,7
+    @@ Japanese version available here : README-JP.md    
+    This script was originally created when we had to wipe hundred computers and   
+    update the inventory system (GLPI : http://www.glpi-project.org) with the new status.    
+    -Boot with the  dban cd (http://www.dban.org) and manually updated GLPI, it's ok for     
+    +The original procedure was to boot with the  dban cd (http://www.dban.org) and manually updated GLPI, it's ok for      
+    one or two computer but after ...      
+    This script should be use with a PXE server, you boot the computer on the network and   
+    
+    $ git commit -a -m " Modification  README "    
+    [master af2a818]  Modification  README    
+    1 file changed, 1 insertion(+), 1 deletion(-)    
+    $ git status    
+    On branch master     
+    Your branch is ahead of 'origin/master' by 1 commit.       
+    (use "git push" to publish your local commits)     
+    nothing to commit, working directory clean
+
+
+With the command git commit --amend I will be able to rectify my commit with the new content it can be just to modify the comment of commit or to add other modification in the last commit. This is very interesting because we are often quick to commit to keep track. This is no longer a problem, because it is possible to add information on the last commit. Note: This is possible on the local repository, however once pushing on a remote server this is not possible.
+
+### Canceling changes to a file
+Another well-known situation is working on a file from the repository and finally the result is worse than the origin: P. There are days like this, finally we say the original file was better. It is possible before committing to resume the original file with the git checkout command.
+   
+   
+    $ vim README.md    
+    $ head README.md    
+    == Description ==    
+    Adding uselless text that I dont need     
+    Japanese version available here : README-JP.md    
+    
+    $ git status     
+    [ ... CUT ...]     
+    modified:   README.md     
+    [ ... CUT ...]     
+    $ git checkout README.md     
+    $ git status     
+    nothing to commit, working directory clean
+
+
+### Reset
+I suggest you do not use the reset method but always favor the following method Revert, I hesitated to demonstrate this method. Finally, is it up to me to judge by omission whether a feature should be presented or not: D.
+
+
+As a reminder git identifies each commit with an id, we can see in time the changes.
+
+
+When using the reset command we tell git to delete the set of commit done to keep the commit as a parameter as the last commit (also called the HEAD header). If we take again the graphical representation this gives:
+
+
+    [ ... Trunk ... ]
+ 
+p>Why this method is unattractive ?? The main reason is that we lose information about the change history. If you are alone on the project the impact is probably less critical although in 6 months your memory will probably have forgotten that some of the changes were removed without any trace. The following revert method allows us to keep this history.
+
+
+Here is an example of using git reset, here is a GIT repository, with some 4 commits
+
+
+    $ git log --pretty=oneline    
+    b520936b2fbd52666092c3ce1d88c99c1124c25c  add  A et B in File[AB]    
+    6caacfa169041ab7b8055c56911e7c813cbc8694 modification 3 files    
+    2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C    
+    84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B
+
+
+We will proceed to a reset to cancel the changes "Adding A and B in File [AB]" AND "Modifying 3 files". Here is the command and the result of the operation:
+  
+  
+     $ git reset 2e1ce9386472407c2d2f15a2aa13532aa79ce2d7     
+     Unstaged changes after reset:    
+     M       FileA     
+     M       FileB    
+     M       FileC    
+     
+     $ git log --pretty=oneline     
+     2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C     
+     84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B
+
+
+As you can see we have lost ALL traces of the explanation of the changes, in our case the impact is only 2 commits this is probably less critical but on 5 or 6 commits see more this being boring. We must commit the change so that it is still inscribed in the history.
+   
+   
+    $ git status -s             
+    M FileA    
+    M FileB     
+    M FileC     
+    
+    $ git commit -a -m " Reset few commits "    
+    
+    $ git log --pretty=oneline   
+    bb6a8d445bd9d84479b47c1debd87b4208057490  Reset few commits    
+    2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C   
+    84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B
+
+
+Well now let's see if it's really better: P.
+
+
+## Revert
+The revert process is not all the same as reset, as its name suggests reset reset the entire repository to a state in the past. The revert statement allows us not to reset a state but to reverse / cancel a particular commit, all while keeping the change history.
+
+
+Let's see an example to represent all, I will continue with the deposit git-demo, I made some modifications for the needs here is the git log:
+  
+  
+      $ git log --pretty=oneline    
+      50dcb3cd131fe7d245cbc205d8d3e9776b556999  Modify A  
+      b7c6d7c50b4f0a79d1bd3a1a6ec33a1430792d41  modify C     
+      40e85b5d1de8a77313f32780a8bc5347d1069219  Modif file B for add info 
+      bb6a8d445bd9d84479b47c1debd87b4208057490  Reset few commits    
+      2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C
+      84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B   
+      
+      $ git status    
+      On branch master     
+      nothing to commit, working directory clean
+
+
+I want to reverse the commit 40e85b5d1de8a77313f32780a8bc5347d1069219 which contains the modification of the File B, for the pleasure we will visualize the contents: D. We look what contains the commit (Reset of several commits) with what contains the commit (Modify file B for adding info).
+ 
+     $ git diff bb6a8d445bd9d84479b47c1debd87b4208057490 40e85b5d1de8a77313f32780a8bc5347d1069219    
+     diff --git a/FileB b/FileB    
+     index 94c1267..f3ba53b 100644     
+     --- a/FileB     
+     +++ b/FileB     
+     @@ -1,3 +1,6  @@     
+     File not like File A    
+     This is second File B    
+     +    
+     +    
+     +Modification du Fichier B pour ajout d'information
+
+
+So I'm going to reverse the addition of identifying lines with a + content in fileB.
+   
+   
+      $ git revert 40e85b5d1de8a77313f32780a8bc5347d1069219    
+      [master cf4adb3] Revert " Modif FileB"     
+      1 file changed, 3 deletions(-)
+
+
+We see a new commit that includes deletion:
+   
+      $ git log --pretty=oneline     
+      cf4adb3ce6e6bf76429f88e5a53087cdc79407e8  Revert " Modif FileB"         
+      50dcb3cd131fe7d245cbc205d8d3e9776b556999  Modify A      
+      b7c6d7c50b4f0a79d1bd3a1a6ec33a1430792d41  modify C      
+      40e85b5d1de8a77313f32780a8bc5347d1069219  Modif file B for add info     
+      bb6a8d445bd9d84479b47c1debd87b4208057490  Reset few commits     
+      2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C     
+      84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B 
+
+
+If we visualize the file actually the content is no longer present and the differential of the commit confirms it: D
+  
+  
+      $ cat FileB     
+      File not like File A    
+      This is second File B    
+      
+      $ git diff 50dcb3cd131fe7d245cbc205d8d3e9776b556999 cf4adb3ce6e6bf76429f88e5a53087cdc79407e8    
+      diff --git a/FileB  b/FileB  
+      index f3ba53b..94c1267 100644    
+      --- a/FileB    
+      +++ b/FileB    
+      @@ -1,6 +1,3 @@     
+      File not like File A     
+      This is second File B      
+      -     
+      -     
+      -Modif file B for add info  
+
+
+### Checkout in a past commit
+
+It is also possible to flipped a file into a pass state with the checkout command already previewed earlier. Here is the state of the git-demo repository:
+   
+   
+    $ git log --pretty=oneline    
+    f8152f8c96762c39a7efb61f370feb04619d347d   modify  C before checkout     
+    64bd30cb5ce64b4fe38a9db12b40ca5da7ec7660  modify  A and C     
+    cf4adb3ce6e6bf76429f88e5a53087cdc79407e8  Revert " Modif FileB"      
+    50dcb3cd131fe7d245cbc205d8d3e9776b556999  Modify A   
+    b7c6d7c50b4f0a79d1bd3a1a6ec33a1430792d41  modify C    
+    40e85b5d1de8a77313f32780a8bc5347d1069219  Modif file B for add info     
+    bb6a8d445bd9d84479b47c1debd87b4208057490  Reset few commits   
+    2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C      
+    84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B 
+
+
+I'm going to flip the C file to state when commitcf4adb3ce6e6bf76429f88e5a53087cdc79407e8 (Revert "Modify file B for adding info." In this case I can not reverse the commit 64bd30cb5ce64b4fe38a9db12b40ca5da7ec7660 from A and C) because there is also a change to the fileA.
+
+
+Here are the differences:
+ 
+ 
+     $ git diff cf4adb3ce6e6bf76429f88e5a53087cdc79407e8 64bd30cb5ce64b4fe38a9db12b40ca5da7ec7660     
+     diff --git a/FileA b/FileA     
+     index e8ef86e..9b2a687 100644    
+     --- a/FileA    
+     +++ b/FileA     
+     @@ -3,3 +3,5 @@ 
+     This is the first FileA     
+     This the last for modigy FileA     
+     +     
+     +Modification for demo checkout     
+     diff --git a/FileC b/FileC     
+     index 181c9df..b25562b 100644     
+     --- a/FileC     
+     +++ b/FileC     
+     @@ -2,3 +2,4 @@ 
+     File named with C at the end
+     This is third file
+     Another commit for modigy FileC
+     +demonstration checkout    
+    
+    $ git diff cf4adb3ce6e6bf76429f88e5a53087cdc79407e8    
+     diff --git a/FileA b/FileA     
+     index e8ef86e..9b2a687 100644     
+     --- a/FileA     
+     +++ b/FileA     
+     @@ -3,3 +3,5 @@
+     This is the first FileA    
+     This the last for modigy FileA    
+     +    
+     +Modification for demo checkout   
+     diff --git a/FileC b/FileC    
+     index 181c9df..e032e9f 100644     
+     --- a/FileC    
+     +++ b/FileC     
+     @@ -2,3 +2,5 @@ 
+     File named with C at the end    
+     This is third file    
+     Another commit for modigy FileC   
+     +demonstration checkout    
+     +Another modification
+
+
+Realization of the checkout operation:
+    
+    
+    $ git checkout cf4adb3ce6e6bf76429f88e5a53087cdc79407e8 FileC     
+    [ NO OUTPUT ]    
+    
+    $ git status -s     
+    M  FileC
+
+
+We can see that C file was modified but not A, which kept the contents of the commit. Validate and make a commit of the change to save the checkout in the past of fileC.
+   
+   
+    $ git commit -a -m " checkout du fichierC depuis le passe "    
+    [master dffa227]  
+    checkout du fichierC depuis le passe     
+    1 file changed, 2 deletions(-)    
+    
+    $ git log --pretty=oneline   
+    dffa227a72fff9e3c34d6b34e13e581ffb765617  checkout FileC 
+    f8152f8c96762c39a7efb61f370feb04619d347d  modify  C before checkout     
+    64bd30cb5ce64b4fe38a9db12b40ca5da7ec7660  modify  A and C     
+    cf4adb3ce6e6bf76429f88e5a53087cdc79407e8  Revert " Modif FileB"      
+    50dcb3cd131fe7d245cbc205d8d3e9776b556999  Modify A   
+    b7c6d7c50b4f0a79d1bd3a1a6ec33a1430792d41  modify C    
+    40e85b5d1de8a77313f32780a8bc5347d1069219  Modif file B for add info     
+    bb6a8d445bd9d84479b47c1debd87b4208057490  Reset few commits   
+    2e1ce9386472407c2d2f15a2aa13532aa79ce2d7  Add file C      
+    84f8cd1340aade4b38310c838d3122589c3dd7c3  Initialization , with files  A and B 
+
+
+Simple but it is necessary to recall commands: P, always the same secret to remember to use it regularly: D.
+
+
+## Branch manipulation
+
+
+Virtually all VCS have some form of branch management. Creating a branch means diverge from the main line of development and continue to work without worrying about that main line. In many versioning tools, this feature is often resource-intensive and requires you to create a new copy of the working directory, which can take a long time for large projects.
+
+
+Many people refer to the Git branch management model as LA functionality and this is surely the specificity of Git compared to the version manager community. Why is she so special? Git's method of branch management is particularly light, allowing branching almost instantaneously and switching between branches generally as quickly. Unlike many other version managers, Git encourages working with methods that focus on creating and merging branches, up to several times a day. Understanding and mastering this feature is an asset in making Git a unique tool that can literally change the way you develop.
+
+
+## Branches concept
+The following is very interesting in addition to covering the issue of branches under git, we will see a little more how the git system works to store the information of the history. Let's review how the system works for storing data during a commit. When committed in Git, the system stores a commit object that contains a pointer to the snapshot of the content that was indexed, the author metadata, the message, and zero or more pointers to the one or more commits that are the direct parents of this commit: zero parent for the first commit, one parent for a normal commit, and multiple parents for commits that are the result of merging one or more branches.
+
+
+Here is an example of the creation of the repository and the commit of the 3 files:
+
+
+    $ git init     
+    $ git add GettingStartHere test.rb LICENCE     
+    $ git commit -m 'Initial commit of my projet'
+
+
+The git repository now contains five objects: a blob for the contents of each of the three files, a tree that lists the contents of the directory, and specifies which file names are attached to which blobs and a commit object with the pointer to the tree. of origin and all the metadata attached to the commit. Conceptually, the data in your Git repository looks like
+ 
+ 
+Here is another representation but for a set of commit:
+ 
+ 
+The default branch under git is called master this last is implicit when creating a repository we see it when using the git status command:
+   
+   
+    $ git status     
+    On branch master    
+    nothing to commit, working directory clean
+
+
+What is the master branch is just a pointer to a commit object
+
+
+## Branch creation
+In order to demonstrate the use of the simplest branches, we need to create a branch called testing.
+
+
+    $ git branch testing
+
+
+If we go back to the previous graphical representation here is the new configuration:
+ 
+ 
+How does Git know which branch you are on? It keeps a special pointer called HEAD. Note that under this name hides a concept very different from that used in other VCS such as Subversion. In Git, it's a pointer to the local branch where you are. In our case, you are always on master. The git branch command only created a new branch
+
+
+You can view branches with the git branch command without arguments:
+
+    $ git branch     
+    * master      
+    testing
+
+
+The star indicates on which branch we are currently working locally on our repository. A small graphic visualization:
+
+
+## Change branch
+Here is the command :
+    
+      $ git checkout testing    
+      Switched to branch 'testing'
+
+Finally, let's see what happens when you change the testing branch
+   
+      $ vim test.rb    
+      $ git commit -a -m "a modification "
+ 
+ 
+Let's go back to the master branch:
+
+    $ git checkout master     
+    Switched to branch 'master'
+    
+    
+This command performed two actions. She put the HEAD pointer back on the master branch and put the working copy files back in the state pointed to by master. It also means that the changes you make from now will diverge from the old version of the project. This command removes the changes made in the test branch to allow you to start in another development direction.
+
+
+Make a modification on this branch and visualize the result of the operation with a graphical representation:
+ 
+    $ vim test.rb    
+    $ git commit -a -m " Another Change"
+ 
+
+Because in Git, a branch is actually just a simple file containing the 40 characters of the SHA-1 checksum that it points to, branches do not cost anything to create and destroy. Creating a branch is as fast as writing a 41-character file (40 characters plus a carriage return).
+
+
+This is a big difference from the way most VCS handle branches, which involves copying all project files into a second directory.
+
+
+## Example of use of branches:
+Here is a demonstration of the use of the branches The goal here is to demonstrate the benefit of using git and mainly the simplicity of the branch system. In addition to the interest of decentralization, the other interesting aspect is the efficient branch system.
+
+
+Put in situation, you work on a website with git, here is the state of the project "simple":
+ 
+ 
+You receive a request for an improvement required in the next version ticket / issue # 53, you create a new branch to make the changes, reminder: git branch iss53, git checkout iss53. You begin your development, after a commit here is the result.
+ 
+ 
+As always we do not leave you alone on your projects: P, we just report a problem to change production. With Git, you do not need to deploy the already validated changes to iss53 with the fixes for the problem, nor do you have to sweat to eliminate these changes before you can apply the problem fixes in production. All you have to do is simply switch back to the master branch. Take note that it will be necessary to commit your changes in the iss53 branch before making the change.
+  
+  
+    $ git checkout master     
+    Switched to branch "master"
+
+
+Now, your working copy directory is exactly in the state before the changes for problem # 53 and you can focus on your fix. This is an important point: Git resets the working directory so that it looks like the snapshot of the validation on which the branch you are extracting is pointing. It adds, removes, and edits files automatically to ensure that the working copy is the same as it was when you last posted to the branch.
+
+
+To meet the "urgent" demand we will create a new branch for this need, it is not expensive and cleaner.
+ 
+ 
+    $ git checkout -b 'hotfix'    
+    Switched to a new branch "hotfix"    
+    
+    $ vim index.html     
+    $ git commit -a -m "correction wrong email "    
+    [correctif]: created 3a0874c: "correction wrong email"     
+    1 files changed, 0 insertions(+), 1 deletions(-)
+ 
+
+
+## Merge branches
+After many tests and probably several commit you have corrected the production problem with a hotfix. We will now merge, include its new changes in the master branch master.
+
+We switch under the destination branch master and we execute the command git merge with the name of the branch as reference.
+   
+   
+    $ git checkout master     
+    $ git merge hotfix     
+    Updating f42c576..3a0874c     
+    Fast forward      
+    index.html|    
+    1 -      
+    1 files changed, 0 insertions(+), 1 deletions(-)
+
+
+You will notice the mention "Fast forward" which means fast forward in this merger. Since the commit pointed to by the merged branch was directly descendant of the commit you are on, Git advanced the pointer forward. In other words, when trying to merge a commit that can be joined by following the history from the original commit, Git simply advances the pointer because there are no divergent jobs to actually merge - this is call fast forward.
+
+
+## Deleting a branch
+It is possible to delete a branch, in our case the hotfix branch is no longer required because the merger was done in the master branch.
+   
+    $ git branch -d hotfix    
+    Deleted branch hotfix (3a0874c).
+
+
+Merge non-sequential branches
+It is useful to note that the work done in patch is not contained in the files of branch iss53. If you need to retrieve them, you can merge the master branch into the iss53 branch by running the git merge master command, or you can delay the integration of these changes until you later decide to repatriate the branch. iss53 in master. For the purpose of the demonstration, I will take Option 2, which is to merge the iss53 branch once the entire patch is complete.
+
+
+Always in the spirit of having a complete demonstration here is the operation of return under the branch iss53, a small modification and the commit
+   
+   
+    $ git checkout iss53     
+    Switched to branch "iss53"    
+    
+    $ vim index.html   
+    $ git commit -a -m 'new bottom of page finished [problème 53]'    
+    [iss53]: created ad82d7a: "new bottom of page finished [problème 53]"     
+    1 files changed, 1 insertions(+), 0 deletions(-)
+
+ 
+We will now repatriate / merge the changes made in the iss53 branch into the master branch. At the level of the use of the commands we always use git merge to do the operation.
+   
+    $ git checkout master    
+    $ git merge iss53     
+    Merge made by recursive.      
+    index.html |    
+    1 +      
+    1 files changed, 1 insertions(+), 0 deletions(-)
+
+
+You will find that in this case there is no indication "Fast forward" because the commits history are not identical:
+ 
+ 
+In this case, the development history has diverged to a certain extent. Since the commit on the branch you are on is no longer a direct ancestor of the branch you are seeking to merge, Git must work. In this case, Git performs a simple three-source merge, using the two snapshots pointed to by the vertices of the branches and the common ancestor of both.
+
+
+Instead of simply advancing the branch pointer, Git creates a new snapshot that results from the three-way merge and automatically creates a new commit that points to it. This is called a merge commit, which is special in that it has more than one parent.
+ 
+ 
+## Merge conflict management ("merge")
+
+
+The above demonstration is in the best case, unfortunately it is possible that there are conflicts during the merger. If you have changed the same part of the same file differently in the two branches that you want to merge, Git will not be able to cleanly perform the merge.
+
+In our case, if the fix in the hotfix branch touches the same section of the file in iss53 we will get the following error:
+   
+      $ git merge iss53     
+      Auto-merging index.html     
+      CONFLICT (content): Merge conflict in index.html     
+      Automatic merge failed; fix conflicts and then commit the result
+
+
+Git did not automatically create the merge commit. He stopped the process while you resolved the conflict. Launch git status to see at any time after the merge conflict appears which files have not been merged
+   
+   
+    $  git status     
+    index.html: needs merge    
+    # On branch master    
+    # Changes not staged for commit:    
+    #   (use "git add ..." to update what will be committed)    
+    #   (use "git checkout -- ..." to discard changes in working directory)    
+    #     
+    #   unmerged:   index.html    
+    #
+
+
+Anything that has merge conflicts and has not been resolved is listed as unmerged. Git adds standard conflict marks in conflicting files, so you can open them and resolve conflicts manually. Your file contains sections that look like this:
+  
+    <<<<<<< HEAD:index.html     
+
+
+    contact : email.support@github.com
+     =======     
+       please contact us at support@github.com     
+     >>>>>>> iss53:index.html
+     
+     
+This means that the version in HEAD (your master branch, because that's the one you extracted when you started your merge command) is the top of this block (anything above the line = ======), while the iss53 branch version is below. To resolve the conflict, you must choose one part or the other or merge their contents by yourself.
+
+
+Once the edition of the files finished with the good information between the <<<<<<< and >>>>> and that there is thus no longer the lines: <<<<<<<, == ===== and >>>>>>>. We add the file to the index with the git add command and you can commit git commit.
+
+
+If you want to use a graphical tool to solve these problems, you can run git mergetool that starts the appropriate merge graphing tool and lets you navigate conflicts.
+
+
+## Work with a remote repository
+The use of git in a decentralized way does not prevent in any case the use of a server to exchange files and provide access to all the repository. You can use github free of charge http://github.com/. Free for public deposits If you want to have a private deposit, you have to pay a little money.
+
+
+There are 2 possible authentication modes with GIT:
+* username / password
+* with an ssh key
+
+
+I will make an introduction more information available on the site of git: https://git-scm.com/book/en/v1/The-bases-of-Git-Working-with-d-decoration- A9P% C3% B4ts-remote
+
+
+## Git Clone
+We have already had the opportunity to see how to extract a GIT repository, with the command:
+   
+    $ git clone URL_du_depot     
+    or     
+    $ git clone git@HOSTNAME:path_project
+
+## Viewing remote repository configure
+For the same repository it is possible to have one or more remote repository to configure, we can use the command git remote to make all the modifications. The origin identifier is the one used by default when using git clone.
+
+
+Here is an example of the visualization:
+   
+    $ git remote -v     
+    github  https://github.com/patapouf/training.git (fetch)     
+    github  https://github.com/patapouf/training.git (push)     
+    origin  https://git.patapouf.com/sysadmin/training.git (fetch)     
+    origin  https://git.patapouf.com/sysadmin/training.git (push)
+
+
+In the present situation I have:
+* github: which is my public repository on the internet where everyone can visualize my work
+* origin: this is my gitlab server, this is a free version of github, it allows me to have an unlimited private deposit.
+
+
+In both cases it is the same configuration to extract (fetch) and push (push) the files.
+
+
+We can see if our local repository is synchronous with the version on the server:
+   
+    $ $ git remote show github    
+    * remote github         
+    Fetch URL: https://github.com/patapouf/training.git        
+    Push  URL: https://github.com/patapouf/training.git        
+    HEAD branch: master        
+    Remote branch:         
+    master tracked        
+    Local ref configured for 'git push':         
+    master pushes to master (up to date)
+
+
+In this case I had only one branch, if I take another deposit which contains several branches we will see that the result is a little more complex:
+   
+   
+    $ $ git remote show origin    
+    * remote origin         
+    Fetch URL: https://git.patapouf.com/webDev/dj_sandbox.git       
+    Push  URL: https://git.patapouf.com/webDev/dj_sandbox.git        
+    HEAD branch: master        
+    Remote branches:            
+    master    tracked            
+    view_poll tracked             
+    b3notes   tracked    
+    Local branch configured for 'git pull':    
+    view_poll merges with remote view_poll    
+    Local refs configured for 'git push':         
+    master    
+    pushes to master    
+    (up to date)        
+    view_poll pushes to view_poll (up to date)        
+    b3notes   pushes to x3notes   (up to date)
+
+
+## Update files FROM server (pull)
+Of course we want to recover files that were updated by our colleagues, friends, ... To do this we use the command git pull
+
+
+So we give the git pull instruction as a source parameter (the identifier), if I take the example above it could be origin or github, and finally the branch I want to recover. Here is an example with updates.
+   
+   
+    $ git pull origin master     
+    Username for 'https://git.patapouf.com': USER     
+    Password for 'https://USER@git.patapouf.com':     
+    remote: Counting objects: 5, done.     
+    remote: Compressing objects: 100% (4/4), done.     
+    remote: Total 5 (delta 3), reused 0 (delta 0)    
+    Unpacking objects: 100% (5/5), done.     
+    From https://git.patapouf.com/sysadmin/training    
+    * branch  
+    master     -> FETCH_HEAD       8b479ec..cd85a27 
+    master     -> origin/master    Updating 8b479ec..cd85a27     
+    Fast-forward      
+    Linux/01/01.mkd | 8 ++++----    
+    1 file changed, 4 insertions(+), 4 deletions(-)
+
+
+Let's take a minute to read what the order provides us. The first section is more informative, I would like to focus on the branch section:
+    
+    
+    * branch           
+    master     -> FETCH_HEAD         8b479ec..cd85a27  
+    master     -> origin/master      Updating 8b479ec..cd85a27     
+    Fast-forward      
+    Linux/01/01.mkd | 8 ++++----      
+    1 file changed, 4 insertions(+), 4 deletions(-)
+
+
+First the system analyzes the HEAD identifier of the local repository for the master branch, the id is 8b479ec it compares this identifier with the one extracted from the origin / master server, the identifier is cd85a27. Since this is not the same, it starts the merge process. We find the message Fast-forward, because there is a common commit in the 8b479ec history and the following commits have been added over time. As we saw in the merge section, the system will simply download the new repository and change the HEAD pointer to the new header.
+
+
+Another point to note is the description of the changes made to the files, in this case only the file 01_revision.mkd was changed, with minor changes.
+
+
+## Updating files TO the server (push)
+Now that we are able to extract the changes made by others let's see how we can push our files. Of course to push changes on the server must have the rights to the deposit.
+
+
+A little reminder, we do not push files on the server but a repository, so to be able to update a file on the server must be commited locally files and it is the deposit commited locally that we synchronize with the server.
+
+
+So if I want to modify the file toto.html
+1. I update my local repository (git pull)
+2. I make the modifications on the file
+3. I do the local commit (git commit -a -m "Description")
+4. I push my changes to the server
+
+
+Here is the instruction to update the repository:
+    
+    
+    $  git push github master    
+    Username for 'https://github.com': USER    
+    Password for 'https://USER@github.com':     
+    Counting objects: 4, done.    
+    Delta compression using up to 2 threads.     
+    Compressing objects: 100% (4/4), done.     
+    Writing objects: 100% (4/4), 3.03 KiB | 0 bytes/s, done.    
+    Total 4 (delta 2), reused 0 (delta 0)     
+    To https://github.com/patapouf/training.git       
+    cd85a27..06ed09f  master -> master
+
+
+Here is the remote repository to now the new repository with all the changes: D.
+
+
+## Unprocessed functionality here
+I have omitted some feature because at the moment I do not use them often. However it is possible that these are required for you here are links to additional documentation:
+* Tags / Labeling: http://git-scm.com/book/en/v1/The-bases-of-Git-%C3%89tiquetage
+* check out / extract a subdirectory: http://stackoverflow.com/questions/4114887/is-it-possible-to-do-a-sparse-checkout-without-checking-out-the-whole-repository
+* submodules / include git repositories in other git: P: https://git-scm.com/book/en/v1/Utilities-Git-Under-modules
+
+## Référence :
+
+Git Cheat sheet : https://training.github.com/kit/downloads/github-git-cheat-sheet.pdf
+
+
+site atlassian : https://www.atlassian.com/git/tutorials/resetting-checking-out-and-reverting/summary
+

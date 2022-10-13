@@ -1,0 +1,204 @@
+# Problem Analysis on GNU / Linux Systems
+## SSL certificate problem
+
+Certificate problem (openssl):
+
+
+HA! certificates what happiness :), security is important :). Certificates do not make our lives easier, in addition to encrypting data that does not help us for diagnostics sometimes the client refuses to connect to the service if the certificate is not valid.
+
+
+When you have a web server that offers a certificate it is "easy" to extract the certificate using our browser.
+
+
+However, it is more complicated to use the same technique for non-Web services such as imapS, ftpS, ldapS, or an internally developed service. We will be able to use the ** openssl ** command to see / extract the certificate from a remote service.
+
+## Extracting the certificate of a network service
+
+
+This method works as well to extract the certificate of an https service as for an imapS mail service or other. Let's see two examples:
+
+```
+**
+# connection au serveur imapS de google.com
+$ openssl s_client -connect imap.gmail.com:993
+CONNECTED(00000003)
+depth=2 C = US, O = GeoTrust Inc., CN = GeoTrust Global CA
+verify error:num=20:unable to get local issuer certificate
+verify return:0
+---
+Certificate chain
+0 s:/C=US/ST=California/L=Mountain View/O=Google Inc/CN=imap.gmail.com
+i:/C=US/O=Google Inc/CN=Google Internet Authority G2
+1 s:/C=US/O=Google Inc/CN=Google Internet Authority G2
+i:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA
+2 s:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA
+i:/C=US/O=Equifax/OU=Equifax Secure Certificate Authority
+---
+Server certificate
+-----BEGIN CERTIFICATE-----
+MIIEdjCCA16gAwIBAgIIc7FHxMEoRUgwDQYJKoZIhvcNAQEFBQAwSTELMAkGA1UE
+BhMCVVMxEzARBgNVBAoTCkdvb2dsZSBJbmMxJTAjBgNVBAMTHEdvb2dsZSBJbnRl
+cm5ldCBBdXRob3JpdHkgRzIwHhcNMTQxMTA1MTIxOTUxWhcNMTUwMjAzMDAwMDAw
+[ ... CUT OUTPUT ... ]
+KnGG1lcetkuPJrlFs9gNUvn0KAl7I2MXwcAU1DH8W5R5KL/FrQEgt/Uu
+-----END CERTIFICATE-----
+subject=/C=US/ST=California/L=Mountain View/O=Google Inc/CN=imap.gmail.com
+issuer=/C=US/O=Google Inc/CN=Google Internet Authority G2
+---
+No client certificate CA names sent
+---
+SSL handshake has read 3719 bytes and written 434 bytes
+---
+New, TLSv1/SSLv3, Cipher is ECDHE-RSA-AES128-GCM-SHA256
+Server public key is 2048 bit
+Secure Renegotiation IS supported
+Compression: NONE
+Expansion: NONE
+SSL-Session:
+Protocol : TLSv1.2
+Cipher : ECDHE-RSA-AES128-GCM-SHA256
+Session-ID: 71C422F26C28E03041827DFF0A434B3E19DE5A397B4C2398E10E60208ECBB40C
+Session-ID-ctx:
+Master-Key: A60EB98D71886E1DD397278D831BA489D2DD7DAA870693B075EB31EE83913994D05EE5A9517D12DE42C2A95412E9D11B
+Key-Arg : None
+PSK identity: None
+PSK identity hint: None
+SRP username: None
+TLS session ticket lifetime hint: 100800 (seconds)
+TLS session ticket:
+0000 - 10 19 f3 c6 98 c4 55 0e-d1 25 da 73 de 7a 32 42 ......U..%.s.z2B
+0010 - 1b 49 e9 fd 2e 7f 67 8d-cd 8a 70 dc 0b 03 4e 5f .I....g...p...N_
+0020 - b5 ee e1 b0 27 5d 14 5b-4b 71 b9 a0 12 01 54 6f ....'].[Kq....To
+0030 - e7 68 d7 8c 77 a0 a5 6f-bc f6 cc 5b 3a aa fb c6 .h..w..o...[:...
+0040 - 02 32 cd ee 00 55 4a 73-76 23 16 68 47 50 2d d3 .2...UJsv#.hGP-.
+0050 - 4e 36 15 e7 ed da a6 ad-01 48 e7 c1 ed 13 cc 28 N6.......H.....(
+0060 - c9 b6 09 32 1f 2f 62 90-24 f1 f9 10 bd a1 a8 b9 ...2./b.$.......
+0070 - b4 18 82 da 3c 10 a1 9f-82 16 19 8b fe d7 09 64 ....<..........d
+0080 - 35 3b 56 13 d6 50 28 f2-56 10 29 b4 43 b6 62 46 5;V..P(.V.).C.bF
+0090 - 97 4f d6 f3 ff ac f1 0b-a8 f3 34 70 86 c3 04 b1 .O........4p....
+00a0 - 0e 93 c1 0f ....
+
+Start Time: 1416835628
+Timeout : 300 (sec)
+Verify return code: 20 (unable to get local issuer certificate)
+---
+* OK Gimap ready for requests from 24.114.43.47 p8mb187845341pac
+DONE
+**
+```
+
+If you take the text between: ----- BEGIN CERTIFICATE ---- and ----- END CERTIFICATE ---- put it in a file you will be able to see the certificate:
+
+```
+**
+$ cat imap-google.crt
+-----BEGIN CERTIFICATE-----
+MIIEdjCCA16gAwIBAgIIc7FHxMEoRUgwDQYJKoZIhvcNAQEFBQAwSTELMAkGA1UE
+BhMCVVMxEzARBgNVBAoTCkdvb2dsZSBJbmMxJTAjBgNVBAMTHEdvb2dsZSBJbnRl
+cm5ldCBBdXRob3JpdHkgRzIwHhcNMTQxMTA1MTIxOTUxWhcNMTUwMjAzMDAwMDAw
+WjBoMQswCQYDVQQGEwJVUzETMBEGA1UECAwKQ2FsaWZvcm5pYTEWMBQGA1UEBwwN
+TW91bnRhaW4gVmlldzETMBEGA1UECgwKR29vZ2xlIEluYzEXMBUGA1UEAwwOaW1h
+cC5nbWFpbC5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQCr2Lnh
+lCxF09pz+4e/p5RDoVK6PVdmXXnuvr0WNOyuSmX+2p5DImeYORfaDJnQgcy6rpdm
+NOvF8n8flP8fT+tTPmNLFy2X3Ky49N2CkU1An0cLvJsmMGxzzvgOyhDgvlfzrnoK
+uqcWQ0VE9Kt+U/CsepKGit4C4z4Ib5WTzs3RHD+Icwvsb2OdMl2LUerlIbOWH1Nb
+DoeeoXzS3lJGf/2oNbLw2e6LUzq9DfWrCdznIEHQJu0u8IYUu6MAPUmmfO/S1SCS
+TAIx8dGndNLEHRfz8E9YOms+DmYqVl1Ckmsgsnvt1vS4/XyICa+5hoMg2uVPL7Cy
+hijagnCQgkpPfDqZAgMBAAGjggFBMIIBPTAdBgNVHSUEFjAUBggrBgEFBQcDAQYI
+KwYBBQUHAwIwGQYDVR0RBBIwEIIOaW1hcC5nbWFpbC5jb20waAYIKwYBBQUHAQEE
+XDBaMCsGCCsGAQUFBzAChh9odHRwOi8vcGtpLmdvb2dsZS5jb20vR0lBRzIuY3J0
+MCsGCCsGAQUFBzABhh9odHRwOi8vY2xpZW50czEuZ29vZ2xlLmNvbS9vY3NwMB0G
+A1UdDgQWBBSY7AhfmQJHsCLtSGFf8QT3Wr8VVzAMBgNVHRMBAf8EAjAAMB8GA1Ud
+IwQYMBaAFErdBhYbvPZotXb1gba7Yhq6WoEvMBcGA1UdIAQQMA4wDAYKKwYBBAHW
+eQIFATAwBgNVHR8EKTAnMCWgI6Ahhh9odHRwOi8vcGtpLmdvb2dsZS5jb20vR0lB
+RzIuY3JsMA0GCSqGSIb3DQEBBQUAA4IBAQBIMoAJ/dHs7FBithANe0tsjINcEEZt
+EUocVpn9QZt2RfTbLi/wMby5saha2aR78/poptNCpVID6TkUOytb0vm5o4sYoYew
+gbYKJh4jyXvyUIujZCBnoz7Jy364hjBpoMJwPAZriaLXvOz42GXgX4NmMCd11nXK
+HsVZ8VGVh3pDWA4lfMGPdVESN2+GElsA+D2MPkTdIv/0FN3f66YeFqIK9hst/nMh
+bzh8LrLnguc35oX8WUMN3Ks7nrG6CjiskAuD+9ICqhzW6Mnnm13l5fDiEnEL40re
+KnGG1lcetkuPJrlFs9gNUvn0KAl7I2MXwcAU1DH8W5R5KL/FrQEgt/Uu
+-----END CERTIFICATE-----
+$ openssl x509 -in imap-google.crt --text
+Certificate:
+Data:
+Version: 3 (0x2)
+Serial Number:
+73:b1:47:c4:c1:28:45:48
+Signature Algorithm: sha1WithRSAEncryption
+Issuer: C=US, O=Google Inc, CN=Google Internet Authority G2
+Validity
+Not Before: Nov 5 12:19:51 2022 GMT
+Not After : Feb 3 00:00:00 2023 GMT
+Subject: C=US, ST=California, L=Mountain View, O=Google Inc, CN=imap.gmail.com
+Subject Public Key Info:
+Public Key Algorithm: rsaEncryption
+Public-Key: (2048 bit)
+Modulus:
+00:ab:d8:b9:e1:94:2c:45:d3:da:73:fb:87:bf:a7
+[ ... CUT OUTPUT  ... ]
+**
+```
+
+common problem with certificates:
+
+
+1 - Private / public duo: If the server does not start and there is a problem with the key validate and RE-VALIDATE the key pair (private and public). Both are indissociable if you do not have the right certificate with the key associated with it you will never be able to start the service. It is impossible to regenerate just a part, so if you have lost the private key, you will have to recreate the pair.
+2 - Invalid service name: An SSL certificate is provided for a specific name stated in the certificate in the * CN * section, in the above example the information is there:
+
+
+Subject: C=US, ST=California, L=Mountain View, O=Google Inc, CN=imap.gmail.com
+
+
+If we communicate with the service using another non than that stipulated in the CN there will be an error message from the certificate. There are certificates with multiple CNs and even with wildcard * .domain.com, the price is accordingly.
+
+
+3 - The expiration date of the certificate, the certificate has been assigned for a given period, after expiration it can not be validated. in this case we have the following information:
+Validity
+
+* Not Before: Nov 5 12:19:51 2022 GMT
+* Not After : Feb 3 00:00:00 2023 GMT
+* 
+4 - Problem in the chain of certificate: less frequent but possible it would be possible that the certificate provided by the service is valid but the chain of validation has a problem. The certificate transmitted by the service is usually issued by a certificate entity, unfortunately the latter may not be recognized by your browser or client. So that the validation is carried out it is necessary that your client (mail / web / ...) knows the issuer the list is short, in order to offer to a greater our the possibility of issuing certificates it is possible to chain the validations in our case:
+
+```
+Certificate chain
+0 s:/C=US/ST=California/L=Mountain View/O=Google Inc/CN=imap.gmail.com
+i:/C=US/O=Google Inc/CN=Google Internet Authority G2
+1 s:/C=US/O=Google Inc/CN=Google Internet Authority G2
+i:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA
+2 s:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA
+i:/C=US/O=Equifax/OU=Equifax Secure Certificate Authority
+```
+
+The originating authority that issued the certificate is i:/C=US/O=Google Inc/CN=Google Internet Authority G2 qui lui fut émis par i:/C=US/O=GeoTrust Inc./CN=GeoTrust Global CA qui lui même fut émis par i:/C=US/O=Equifax/OU=Equifax Secure Certificate Authority . I can assume that the latter is recognized by my machine as a source of reliable authority. With the order
+** openssl s_client -showcerts -connect imap.gmail.com:993 **it is possible to see the certificates in chain.
+
+## Visualization of the negotiation process
+
+Always with the same command it is possible to visualize the exchange of the SSL communication made.
+
+```
+**
+$ openssl s_client -state -nbio -connect google.com:443 | grep ^SSL
+SSL_connect:before/connect initialization
+SSL_connect:SSLv2/v3 write client hello A
+SSL_connect:error in SSLv2/v3 read server hello A
+SSL_connect:SSLv3 read server hello A
+depth=2 C = US, O = GeoTrust Inc., CN = GeoTrust Global CA
+verify error:num=20:unable to get local issuer certificate
+verify return:0
+SSL_connect:SSLv3 read server certificate A
+SSL_connect:SSLv3 read server key exchange A
+SSL_connect:SSLv3 read server done A
+SSL_connect:SSLv3 write client key exchange A
+SSL_connect:SSLv3 write change cipher spec A
+SSL_connect:SSLv3 write finished A
+SSL_connect:SSLv3 flush data
+SSL_connect:error in SSLv3 read server session ticket A
+SSL_connect:error in SSLv3 read server session ticket A
+SSL_connect:SSLv3 read server session ticket A
+SSL_connect:SSLv3 read finished A
+SSL handshake has read 4500 bytes and written 434 bytes
+SSL-Session:
+**
+```

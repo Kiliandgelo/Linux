@@ -1,0 +1,204 @@
+# Presentation of VIM
+
+   * VIM concept
+
+   * Using VIM
+
+      * Move (Command mode)
+
+      * From Command Mode to Insert Mode
+
+      * Executable commands in Command mode
+
+           * Search in file
+
+           * File Manipulation
+
+           * Cut / copy & paste (command), search & replace (command exec)
+        
+       * VIM reference site
+
+# VIM concept
+
+The text editor is a basic tool in Linux. In particular, it is used to modify the system configuration files. The two most well known and used text editors are Vim and Emacs. And since I do not know Emacs, well, I'll explain how Vim works!
+
+
+vim means Vi IMproved: this is an improved version of the classic vi. It is very complete, not very greedy in resources, and does very well syntax highlighting. It is not easy to master at first, but you will quickly be conquered!
+
+
+The use of VIm is not deemed simple, but often the appearance of complexity is mainly due to a problem of understanding the operation of the software. VI is structured in mode, each mode to a role / purpose in the system the important thing here is to understand this logic.
+
+
+Here is the list of available modes:
+
+   * The Command mode, in which you are when you open Vim. In this mode, you type commands ... that we will see in more detail! If you are in another mode and want to return to command mode, type Esc.
+    we can with this mode: save the document, realize search and replace, open another document, move in the document, ...
+
+   * The Insert mode that is accessed by pressing the Insert key. The indicator - INSERT - appears at the bottom of the screen. In this mode, you insert text classically.
+
+   * The replacement mode accessed by pressing Insert a second time. The - REPLACEMENT - indicator will appear at the bottom of the screen. In this mode, the text entered replaces the text under the cursor.
+
+   * The Visual mode accessed by the v key from the Command mode. The indicator - VISUAL - appears at the bottom of the screen. This mode allows you to select text to globally apply commands.
+
+
+As you can see the ESC / Esc key allows you no matter which mode you are in to return to command mode.
+
+
+### Reminder to complete the installation of VIM
+
+
+    user@hostname:~$ sudo apt-get install vim 
+
+## Using VIM
+
+To call the software nothing new we will use the name of the command with parameter file name, although the latter is optional.
+
+
+     user@hostname:~$ vim notre_fichier
+
+
+The first mode we are in is the command mode, this is logical because this mode is used for moving to the file. We will start with this mode
+
+
+## Move (Command mode)
+
+As mentioned earlier the command mode allows us to move in the file, here are the different keys to move it, take note that this is a short list and there is other key available.
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [← or h] | Moving a character to the left | 
+| :small_orange_diamond: [↓ or j] | Moving a character down |
+| :small_orange_diamond: [↑ or k] | Moving a character up |
+| :small_orange_diamond: [→ or l] | Moving a character to the right|
+| :small_orange_diamond: [e] | Go to the end of the word|
+| :small_orange_diamond: [w] | Jump to the beginning of the next word (thus skip spaces characters, tabs, ...) |
+| :small_orange_diamond: [0 (zéro) ou ^] | Go to the beginning of the line |
+| :small_orange_diamond: [$] | Go to the end of the line |
+| :small_orange_diamond: [G] | Go to the end of the file |
+| :small_orange_diamond: [gg] | Back to the beginning of the file |
+| :small_orange_diamond: [← or h] | Moving a character to the left |
+
+
+
+
+The use of h, j, k, l is little used nowadays however it is important to know them or to know that it exists, because if one day you are on a system that only has an original VI you need to debug it will be your only method of moving.
+
+## From Command Mode to Insert Mode
+
+Now that we are able to move through the file we will see how to go into insert mode.
+
+
+The - INSERT - indicator will appear at the bottom of the screen.
+
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [a (append)] | Toggle insert mode after the cursor | 
+| :small_orange_diamond: [i (insert)]| Toggle insert mode in front of the current character|
+| :small_orange_diamond: [o] | Add a new line below the current line and switch to insert mode |
+| :small_orange_diamond: [O] | Add a new line above the current line and switch to insert mode |
+| :small_orange_diamond: [I] | Toggle in insert mode at the beginning of the current line |
+| :small_orange_diamond: [A] | Toggle insert mode at the end of the current line |
+
+
+
+Callback to return to command mode using the ESC key
+
+## Executable commands in command mode
+
+Instructions made in command mode that begin with the characters "/,?,:" Allow the execution of miscellaneous instructions, when using these characters you will see at the bottom of the screen the instruction you are typing. / and? allows to perform searchs in the files whereas the use of: allows to call instructions of VIM which is build-in or to call modules. Here are some exec commands available:
+
+
+### Search in file
+
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [/key_word] | to search a word down the text (n to move to the next occurrence, N to go to the previous one) | 
+| :small_orange_diamond: [?key_word]| to search for a word at the top of the text (n to move to the next occurrence, N to move to the previous one (so down))|
+
+
+
+## File Manipulation
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [:w] | to register | 
+| :small_orange_diamond: [:w file_name]| to register-under file_name |
+| :small_orange_diamond: [:q] | to leave |
+| :small_orange_diamond: [:wq] | to save and leave|
+| :small_orange_diamond: [:q!] | to leave WITHOUT saving changes|
+| :small_orange_diamond: [:r] | to include the contents of another file |
+| :small_orange_diamond: [:e] | To open another file |
+
+
+## Cut / copy & paste (command), search & replace (command exec)
+
+We all use it glibly to copy it into everyday life and I'm sure you're dying to use this feature with your favorite new editor. We will find that these commands do this in command mode so with instructions using character.
+
+
+Let's start with the cut, this will have the advantage of allowing the visualization of the operation.
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [x] | Cut the current character | 
+| :small_orange_diamond: [X]| Cut the previous character|
+| :small_orange_diamond: [dd] | Cut all the current line |
+| :small_orange_diamond: [d$] | Cut the line from the current character to the end of the line |
+| :small_orange_diamond: [d0] | Cut the line from the current character to the beginning of the line |
+| :small_orange_diamond: [dw] | Cut the current word|
+| :small_orange_diamond: [[number]x] | Cut N character for example: 3x cuts the next 3 characters, it is possible to do the same operation with the capital X |
+| :small_orange_diamond: [[number]dd] | N line cut for example: 20dd cuts the next 20 lines |
+| :small_orange_diamond: [[number]dw] | N Word Cut |
+
+
+
+Let's continue with the copy, you will find that the concept is very similar.
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [y] | Copy the current character | 
+| :small_orange_diamond: [Y]| Copy the previous character |
+| :small_orange_diamond: [yy] | Copy all current line |
+| :small_orange_diamond: [y$] | Copy the line from the current character to the end of the line |
+| :small_orange_diamond: [y0] | Copy the line from the current character to the beginning of the line |
+| :small_orange_diamond: [yw] | Copy the current word |
+| :small_orange_diamond: [[number]y] | Copy N character for example: 3x cuts the next 3 characters, it is possible to do the same operation with the capital X |
+| :small_orange_diamond: [[number]yy] | Copy N line for example: 20dd cuts the next 20 lines |
+| :small_orange_diamond: [[number]yw] | Copy N word |
+
+
+
+
+Well it's all well and good but it remains only to stick: D.
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [p] | Paste what's in the buffer | 
+| :small_orange_diamond: [[number]p]| Paste several times what is in the buffer |
+
+
+Of course you have to use it regularly, otherwise each time you look for the appropriate key.
+
+
+To find and replace it, this is in the world execution mode command, so this starts with the character:.
+
+
+Here is the way of use:
+
+| <b><u>key</u></b> | <b><u>Description</u></b> | 
+| :---         | :---         | 
+| :small_orange_diamond: [:s/original_word/new_word] | This replaces original_word with new_word on the current line only, plus if there is
+has several occurance of the word original word only the first one will be modified. | 
+| :small_orange_diamond: [:s/original_word/new_word]/g]| This replaces original_word with new_word on the current line only, plus if there is
+several occurrences of the word word_original it will be all modify, this thanks to the option / g |
+| :small_orange_diamond: [:3,7s/original_word/new_word]/g] | This replaces original_word with new_word for lines 3 to 7 inclusive. |
+| :small_orange_diamond: [:%s/original_word/new_word]/g]] | This replaces original_word with new_word for the entire document |
+
+
+
+## VIM reference site
+
+
+    http://michael.peopleofhonoronly.com/vim/ : Cheat sheet VIM
+

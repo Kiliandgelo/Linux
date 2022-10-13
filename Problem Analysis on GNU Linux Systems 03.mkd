@@ -1,0 +1,332 @@
+# Problem Analysis on GNU / Linux Systems
+## Disk space problem
+
+This is a complicated and critical situation, if you are on call and receive a call about a hard disk space problem. How to judge the value of the data of a machine we will see something to identify files "deletable" or "movable". The action to take is of course different depending on the action, here are some situations.
+
+
+The first thing to do is to determine where there is a lack of disk space, because the file system tree can be divided into several partitions:
+
+
+### available space
+
+```
+$ df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/vg0-root   99G   73G   21G  78% /
+tmpfs                 3.9G     0  3.9G   0% /dev/shm
+/dev/sda1              97M   90M  2.1M  98% /boot
+/dev/mapper/vg0-export
+                      197G  170G   18G  91% /export
+```
+
+As you can see here there is 2 partition / and / home, if / home is almost filled with no need to make space in / var this will not fix the problem in / home. It is therefore important to put efforts in the right place.
+
+
+Cleansing the package system files, package systems such as yum / rpm, apt / dpkg or pacman (arch linux) download the package files locally and proceed with the installation. Once the installation realize there is no deletion realized temporary files. You can sometimes recover some megs to see 1 or 2 Gig. You can see the space used in this way:
+
+
+### installation system cache
+
+```
+$ du -hs /var/cache/yum/
+585M    /var/cache/yum/
+ 
+$ du -hs /var/cache/apt
+561M    /var/cache/apt
+```
+
+To perform the cleaning use the command:
+
+### clean up yum
+
+```
+$ sudo  yum clean all
+Loaded plugins: downloadonly, fastestmirror, rhnplugin, security
+Cleaning repos: prod_centos_6_epel_x86_64 prod_centos_6_jpackage_x86_64 prod_centos_6_puppetlab prod_centos_6_spacewalk_client_x86_64 prod_centos_6_updates_x86_64
+              : prod_centos_6_vmware_tools51_x86_64 prod_centos_6_x86_64
+Cleaning up Everything
+Cleaning up list of fastest mirrors
+$ du -hs /var/cache/yum/
+342M    /var/cache/yum/
+``` 
+
+It is likely that this does not solve your problem, important to keep in mind, the increase in hard disk space is probably taken by the application that rolls on the server. Well I know it's a statement a bit obvious but it should be underlined.
+
+
+So if we have a default web server the files are stored in: / var / www so it would be interesting to validate in this directory the use of space. If there is a default database the files are stored in / var / lib, is that where the space is used?
+
+
+You will note that in both cases we fessons reference to the directory / var, because this directory contains the variable data of the system.
+
+
+There are of course the user files present in / home.
+
+
+You could do a search for the used space, of course the operation can be long if there is a lot of data:
+
+### search for used space
+
+```
+$ sudo du -hsc /var /usr /home /root /data
+# until recieved information
+$ cd /var
+$ sudo du -hsc *
+# etc until identification of the problem
+```
+
+It is also possible to clean the main logs by performing compression of files, text files compresses very well so it is possible to recover a little space. It's log files are also movable to free up some space. I invite you NOT to delete any logs that may be critical for a person.
+
+
+## Deleting a large file being played
+
+There is an important point to consider if you find a large file and want to delete it, if it is currently accessed by a program it is possible that you do not recover the space.
+
+
+We will see a boring situation, you want to make space on the disk you find a big log file, neither one nor two you delete the file unfortunately the space is not released.
+
+
+Let's see an example:
+
+### deleting a file but still the same space used
+```
+$ df -h
+$ rm file
+$ df -h
+```
+
+The first time it happens to you is disbelief, you say that the operation did not work perhaps a problem of law or that the operation takes time, unfortunately after several minutes nothing.
+
+
+Finally or you will seek another solution or you reboot the machine by modifying GNU / Linux: P, I was on FreeBSD the first time :), after I understood why and especially to find that my favorite OS had the same behavior.
+
+
+If we had done the lsof command to list open files on the system we would have noticed that an application is currently using the file in write mode. The file system keeps a lock on the file and for performance reasons it considers that the file is still present and does not replay the block data assigned to it. If we had restarted the application that accesses the file, the operating system would have read the information from the file and released the space. Small parenthesis it is the same situation that happens during the rotation of the logs that's why we have to restart or reload the services so that it considers that the file is rotated.
+
+
+It is possible that you do not want to have a service interruption especially if the file you want deleted is a file managed by a java application for example the tomcat log file is catalina.out. If you have to stop tomcat you have to plan several minutes of unavailability of the service.
+
+
+Here is how to delete the file with "replay" or operating system interpretation
+
+## "delete" a file that is open
+
+```
+$ sudo cp /dev/null File
+```
+
+## Using a symlink to move content
+
+Well you have identified the problem, the company's web server uses a database and the database is growing quickly. It's the weekend, the DBA are not available or the web developer, however the company is in marketing companion must not loose it ....: - /.
+
+The you think is too stupid, because the partition / is 98% full while the partition / data is almost empty with 40Gig free ... knowing that the comic is 10Gig, so there is enough space so that the comic evolves until Monday to look at the problem.
+(here I abstract the LVM system or Virtual machine ...)
+
+
+In a situation like this we could move the database on the partition / data in order to offer some air to the / partition.
+
+
+Here are the operations.
+1- creation of the directory of the BD in / data with the right permissions
+
+### creation réperotoire mysql
+
+```
+sudo mkdir /data/mysql
+```
+
+2- Synchronization of the database files
+
+### rsync mysql
+
+```
+sudo rsync -av /var/lib/mysql/ /data/mysql/
+```
+
+3- It will be necessary to stop the comic :(, there will be downtime but very fast because a first sync was realized.
+
+### stop mysql and move the data and restart.
+
+```
+sudo /etc/init.d/mysqld stop && sudo rsync -av /var/lib/mysql/ /data/mysql/ 
+sudo du -hs /data/mysql 
+sudo rm -rf /var/lib/mysql && sudo ln -s /data/mysql /var/lib/mysql && sudo /etc/init.d/mysql start
+```
+
+4 - Validate that all works.
+
+With the completion of a symbolic link we were able to move "quickly" with a minimum of downtime service.
+
+
+This works with the majority of services, but beware of SELinux or AppArmor which blocks the access of files to the application user like mysql.
+
+
+## LVM (Logical Volum management) and adding hot space.
+
+The above example is fine and applies well however it is not optimal it was like that we could solve the space problem in the past when we did not have LVM and the partitioning was done when installing the server. Nowadays we have LVM which allows us to better manage our space and to allocate space to the partition as needed, addition and deletion (ok the deletion is more complicated: P).
+
+
+In the course schedule we see LVM later however, it would be a big mistake not to mention it here.
+
+
+I invite you to see this lesson for more information on LVM.
+
+
+first, let's validate that the partition is an LVM partition. With the df command we can get an idea of the nature of the partition
+
+### lvdisplay
+
+```
+$ df -h
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/vg0-root   99G   65G   29G  70% /
+tmpfs                 3,9G     0  3,9G   0% /dev/shm
+/dev/sda1              97M   90M  2,1M  98% /boot
+/dev/mapper/vg0-export
+                      197G  170G   18G  91% /export
+ 
+$ sudo lvdisplay /dev/mapper/vg0-export
+  --- Logical volume ---
+  LV Path                /dev/vg0/export
+  LV Name                export
+  VG Name                vg0
+  LV UUID                a84Klh-bkbG-foZk-8SDF-Y35v-1X8W-K6bZ08
+  LV Write Access        read/write
+  LV Creation host, time , 
+  LV Status              available
+  # open                 1
+  LV Size                200,00 GiB
+  Current LE             6400
+  Segments               10
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     256
+``` 
+
+We can confirm that the partition is a logical volume, we will validate that the volume group still has space available to extend the partition.
+
+
+### vgdisplay
+
+```
+$ sudo vgdisplay vg0
+  --- Volume group ---
+  VG Name               vg0
+  System ID             
+  Format                lvm2
+  Metadata Areas        6
+  Metadata Sequence No  28
+  VG Access             read/write
+  VG Status             resizable
+  MAX LV                0
+  Cur LV                3
+  Open LV               3
+  Max PV                0
+  Cur PV                6
+  Act PV                6
+  VG Size               319,72 GiB
+  PE Size               32,00 MiB
+  Total PE              10231
+  Alloc PE / Size       9664 / 302,00 GiB
+  Free  PE / Size       567 / 17,72 GiB
+  VG UUID               KtX1Lz-1Xnp-CQrA-7WQ3-hLZr-3ezc-yVCPZm
+``` 
+ 
+
+We have space if we did not have space we could add a hard disk, of course this option is easier to implement when we handle a virtual machine. We will see this operation in the next section.
+
+
+We will increase the score of 2Gig just to give us some leeway.
+
+
+### adding space with lvextend
+
+```
+$ sudo lvextend -L +2G /dev/vg0/export
+ Extending logical volume export to 202,00 GiB
+  Logical volume export successfully resized
+```
+
+Perfect we see in the message that the partition is bigger however when we use * df * there is still no more space:
+
+
+### viewing added space
+
+
+```
+$ df -h /dev/mapper/vg0-export
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/vg0-export
+                      197G  170G   18G  91% /export
+``` 
+
+
+The partition is magnified but the system queue does not know we need to use the * resize2fs * command for this to be active.
+
+### using resize2fs
+
+```
+$ sudo resize2fs /dev/mapper/vg0-export
+resize2fs 1.41.12 (17-May-2010)
+Filesystem at /dev/mapper/vg0-export is mounted on /export; on-line resizing required
+old desc_blocks = 13, new_desc_blocks = 13
+Performing an on-line resize of /dev/mapper/vg0-export to 52953088 (4k) blocks.
+The filesystem on /dev/mapper/vg0-export is now 52953088 blocks long.
+ 
+ $ df -h /dev/mapper/vg0-export
+Filesystem            Size  Used Avail Use% Mounted on
+/dev/mapper/vg0-export
+                      199G  170G   19G  90% /export
+```
+
+Here we have space available: D.
+
+
+## LVM (Logical Volum management) with vmware adding a disk and adding space.
+
+
+In the context of virtualization environment it is even possible to add a hot disk, so if the Group Volume is already used at 100% it is possible to add a disk to the system. The whole operation can be done hot, in other words without reboot.
+
+
+The demonstration here is done with Vmware, a non-free virtualization system however it's what I have available on hand: - / to do a complete demonstration.
+
+
+### Adding the virtual hard disk:
+**
+to add
+**
+
+
+Following the operation, unfortunately you do not see the file representing the hard disk (/ dev / sdb or / dev / sdc, or ...). To be able to manipulate the hard disk you have to re-read the sata devices, here is the command to perform this operation.
+
+```
+**
+$ dmesg
+add the last line
+
+$ sudo bash -c "echo - - -"> / to be added
+$ dmesg
+add the last line
+**
+```
+
+Subsequently we will create a partition on this disk, with ** fdisk ** with the right tag.
+
+```
+**
+$ fdisk / dev / sdb
+to add
+
+**
+```
+
+Add the headers so that it can be added to the group volume and make the association:
+
+```
+**
+$ sudo pvcreate /dev/sdb
+
+$ vgextend vg0 /dev/sdb
+**
+```
+
+Here is the command vgdisplay informs you that there is available space in the Volume Group, you can do the addition in accordance with the instructions presented above.

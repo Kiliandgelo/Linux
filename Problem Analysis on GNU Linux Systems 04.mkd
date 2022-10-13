@@ -1,0 +1,310 @@
+# Problem Analysis on GNU / Linux Systems
+## Performance problem.
+
+We will see some point to identify the system performance problems, however this will be very basic, the optimization of a server takes time and above all it is necessary to understand the software in functions in order to allocate the right resources. So we will see the main line mainly to identify the problem but I will not be able to provide kernel parameter suggestion.
+
+## Analysis of CPU usage
+
+We have the top application that allows us to extract information about the use of the system we had already had the opportunity to see this command in the training: ** add link **.
+
+
+Let's take a look at the main lines here, the command ** top ** allows us to have general information of running applications as well as information on the CPU / memory. The major problem with top is that if you use this command when the machine is very slow so that ** top ** succeeds in collecting all the information it may load the system even more.
+
+
+However, the fact remains that top will provide you with a lot of information.
+
+
+Here is an example of the top result:
+```
+**
+$ top
+to add
+**
+```
+
+We see clearly the distinction between the 2 parts the general information section of the system at the top and the bottom processes classified in order of use of the ** CPU **. If you press ** M ** (upper case) the sorting will be performed using memory, all available command keys are accessed by the help using the ** h ** key.
+
+
+If we look at it we have as information:
+
+```
+**
+top - 17:27:43 up 25 min, 2 users, load average: 0.00, 0.02, 0.08
+Tasks: 96 total, 1 running, 94 sleeping, 0 stopped, 1 zombie
+%Cpu0 : 0.7 us, 2.6 sy, 0.0 ni, 82.2 id, 14.5 wa, 0.0 hi, 0.0 si, 0.0 st
+%Cpu1 : 0.7 us, 0.0 sy, 0.0 ni, 99.3 id, 0.0 wa, 0.0 hi, 0.0 si, 0.0 st
+GiB Mem : 0.974 total, 0.452 free, 0.125 used, 0.397 buff/cache
+GiB Swap: 0.000 total, 0.000 free, 0.000 used. 0.699 avail Mem
+**
+```
+
+- the load of the machine in the first line,
+- The description of the tasks, the processes that are running
+- Information on the use of the CPU
+- the use of memory
+
+
+take the time to dissect.
+
+
+### what is the load of a unix machine
+```
+**
+top - 17:27:43 up 25 min, 2 users, load average: 0.00, 0.02, 0.08
+**
+```
+
+** to add**
+
+### Tasks
+
+```
+**
+Tasks: 96 total, 1 running, 94 sleeping, 0 stopped, 1 zombie
+**
+```
+
+We have the list of tasks in progress, in my case 96 processes are running, 1 is in running state. As a reminder the GNU / Linux system will roll 1 process per CPU, here I have a dual core processor I can have 2 processes running at the same time but it is impossible that this figure is higher. I have 94 processes waiting so in sleep mode, zero in the state of stop so in process of end of program and 1 process zombie.
+
+
+The zombie process is a process that no longer relates to the kernel:
+
+
+DEF wikipedia:
+ * In computer science, under UNIX and similar systems, zombie (English spelling is used) is a term for a process that has ended, but still has a process identifier (PID) and therefore remains still visible in the process table. We also talk about the deceased process.
+
+
+At the end of a process, the system deallocates the resources still owned by the process but does not destroy its control block. The system then passes the process state to the TASK_ZOMBIE value (usually represented by a Z in the "status" column when listing processes with the ps command). The SIGCHLD signal is then sent to the parent process of the process that ended, to inform it of this change. As soon as the parent process has obtained the completion code of the completed process using the wait or waitpid system calls, the completed process is permanently removed from the process table.
+
+```
+**
+
+### CPU usage
+**
+% Cpu0: 0.7 us, 2.6 sy, 0.0 ni, 82.2 id, 14.5 wa, 0.0 hi, 0.0 si, 0.0 st
+% Cpu1: 0.7 us, 0.0 sy, 0.0 ni, 99.3 id, 0.0 wa, 0.0 hi, 0.0 si, 0.0 st
+**
+```
+
+We can see the details of CPU usage, there are several categories:
+
+- us: Percentage of CPU used for user processes ** us ** er
+- sy: Percentage of CPU used for ** Sy ** steme processes
+- ni: Percentage of the CPU used for processes that were * niced *, the system administrator has changed the prioritization of processes either positively (less CPU time) or negative (more CPU time).
+- id: Percentage of CPU waiting ** Id ** the
+- wa: Percentage of the CPU used to wait for access to a resource, often this is access to the hard drive ** W ** a ** A ** ccess.
+
+
+This allows us to have an idea where our resources are allocated. As mentioned earlier, using ** top ** can be problematic if the system already has problems responding. In this case you can use ** vmstat ** which will provide you with "smilar" information for the CPU section.
+
+
+Display of vmstat 4 times with an interval of 2 seconds.
+```
+**
+$ vmstat 2 4
+procs ----------- memory ---------- --- swap-- ----- io ---- -system-- ------ cpu -----
+r b swpd free buff cache if so bo us cs us sy id wa st
+0 0 0 660116 38140 201892 0 0 124 16 42 131 3 1 92 5 0
+0 0 0 660128 38140 201892 0 0 0 0 16 38 0 0 100 0 0
+0 0 0 660128 38140 201892 0 0 0 0 11 22 0 0 100 0 0
+0 0 0 660124 38140 201892 0 0 0 0 9 19 0 0 100 0 0
+**
+```
+
+## Identification of the process using a lot of CPU
+
+First with top we have the information in the lower section the process using the maximum CPU will be at * top *
+
+```
+**
+PID USER PR NI VIRT RES %CPU %MEM TIME+ S COMMAND
+328 root 20 0 50.2m 19.1m 4.0 1.9 0:19.04 S Xorg.bin
+511 bob 20 0 56.4m 19.7m 4.0 2.0 0:03.71 S xfce4-terminal
+650 bob 20 0 4.9m 2.9m 0.7 0.3 0:01.25 R top
+1 root 20 0 5.0m 3.7m 0.0 0.4 0:01.50 S systemd
+2 root 20 0 0.0m 0.0m 0.0 0.0 0:00.00 S kthreadd
+**
+```
+
+In the above example the X interface (Xorg.bin) takes "a lot" of CPU as well as the xfce terminal. Again at the risk of repeating myself to provide this information ** top ** must regularly interoperate the system to collect Memory, CPU, process name, username that executes it ...
+
+
+It is possible with the command ** ps ** to retrieve the same information once, this will all take the same resources but slightly less. Here is the command :
+
+```
+**
+$ ps -x -o user,pid,ppid,pcpu,pmem,start,cmd -x --sort=pcpu,pmem
+[.. CUT OUTPUT ...]
+bob 424 387 0.1 1.6 08:11:44 /usr/lib/xfce4/panel/wrapper /usr/lib/xfce4/panel/plugins/li
+bob 383 358 0.1 1.6 08:11:40 xfwm4 --display :0.0 --sm-client-id 2a8483476-bdf0-459a-bc76
+bob 387 358 0.1 1.8 08:11:41 xfce4-panel --display :0.0 --sm-client-id 2d23b65ad-0088-478
+bob 556 1 0.1 2.4 08:15:36 xfce4-appfinder --collapsed
+bob 390 358 0.1 4.5 08:11:42 /usr/bin/owncloud -session 24ad2cdd4-8e5b-4d53-882b-7244c275
+bob 523 516 0.3 1.9 08:12:30 mousepad [formation].txt
+bob 511 1 1.1 1.9 08:11:59 /usr/bin/xfce4-terminal
+**
+```
+
+As you can see, I put 2 ** ** ** CPUp for the percentage of CPU and ** pmem ** for the% of memory this allows that for the processes using 0.1% of the cpu these are classified by use of memory as the second criterion.
+
+
+To have the information of the cpu which uses the maximum of memory at the top to make a reverse spell by putting a - in front of the identifier thus:
+
+```
+**
+$ ps -x -o user,pid,ppid,pcpu,pmem,start,cmd -x --sort=-pcpu,pmem
+USER PID PPID %CPU %MEM STARTED CMD
+bob 511 1 1.0 1.9 08:11:59 /usr/bin/xfce4-terminal
+bob 523 516 0.6 2.0 08:12:30 mousepad [formation].txt
+bob 383 358 0.1 1.6 08:11:40 xfwm4 --display :0.0 --sm-client-id 2a8483476-bdf0-459a-bc76
+bob 424 387 0.1 1.6 08:11:44 /usr/lib/xfce4/panel/wrapper /usr/lib/xfce4/panel/plugins/li
+bob 387 358 0.1 1.8 08:11:41 xfce4-panel --display :0.0 --sm-client-id 2d23b65ad-0088-478
+**
+```
+
+Another advantage with ** ps ** is that you can parameterize the display, for you need: D.
+
+
+## Memory usage
+
+
+The use of memory under Linux can be known with top but also with ** vmstat **, mentioned earlier, you also have ** free ** that can provide this information.
+
+```
+# result with top
+**
+GiB Mem: 0.974 total, 0.452 free, 0.125 used, 0.397 buff / cache
+GiB Swap: 0.000 total, 0.000 free, 0.000 used. 0.699 avail Mem
+**
+
+# result with free
+**
+$ free -m
+total used free shared buff / cache available
+Mem: 997 119 626 22 250 723
+Swap: 0 0 0
+
+**
+```
+
+We see 2 levels of memory with ** top ** or ** free **, first * Mem * and * swap *, the memory being the memory module in the system, for the swap it is a file or a partition that is used when there is no more memory available to act as virtual memory. Of course the swap is slower than the actual memory but had to be repaired during intensive use of the system for a short time.
+
+
+The GNU / Linux system will classify it free memory, we see it well with the free command, we have the memory * Free *, the memory shares (shared) the buffered memory (buff / cache) and we have the available memory (availabe ).
+
+
+The GNU / Linux system when allocating memory will not release it but will identify it as available for performance reasons. It is less time consuming to use a known memory space than to make a request to the barette, that is why often when one looks at the available memory on a system the section ** free ** is especially if the machine is in execution for several days.
+
+## Identification of the process using a lot of memory.
+
+
+If we use ** ** key again using the ** M ** (uppercase) key, you can change the display configuration to have a ranking by memory usage.
+```
+**
+PID USER PR NI VIRT RES %CPU %MEM TIME+ S COMMAND
+389 bob 20 0 166.6m 45.6m 0.0 4.6 0:01.41 S owncloud
+387 bob 20 0 58.5m 25.0m 0.0 2.5 0:00.82 S xfdesktop
+472 bob 20 0 74.5m 24.8m 0.0 2.5 0:00.62 S nm-applet
+420 bob 20 0 56.6m 24.6m 0.0 2.5 0:00.78 S panel-16-whiske
+**
+```
+
+For the process using the maximum of memory we can take again the command ** ps ** with a slight modification,
+
+```
+**
+$ ps -x -o user,pid,ppid,pcpu,pmem,start,cmd -x --sort=pmem,pcpu
+bob 422 387 0.0 2.0 08:11:44 /usr/lib/xfce4/panel/wrapper /usr/lib/xfce4/panel/plugins/li
+bob 556 1 0.0 2.4 08:15:36 xfce4-appfinder --collapsed
+bob 389 358 0.0 2.4 08:11:41 xfdesktop --display :0.0 --sm-client-id 247e10f31-5ae4-476b-
+bob 481 1 0.0 2.4 08:11:49 nm-applet
+**
+```
+
+## Viewing files open by process
+
+It is possible with the command ** lsof ** to view open files on the system, this includes both network communications (socket) and shared libraries (.so / .dll) as files used by humans.
+
+
+Here is the number of files currently open on my small open laptop for 30 minutes:
+
+```
+**
+$ lsof | wc -l
+5921
+**
+```
+
+As we can see the number of files is not negligible, here is the result for the application ** vim **, I leave you the pleasure to determine the file in short edition:
+
+```
+**
+$ lsof | grep vi
+vim 688 bob cwd DIR 8,1 4096 2878881 /home/patapouf/ownCloud/Projet/Otrs/Formation GNU_Linux-debug-2022111091000031
+vim 688 bob rtd DIR 8,1 4096 2 /
+vim 688 bob txt REG 8,1 2438272 3166406 /usr/bin/vim
+vim 688 bob mem REG 8,1 50892 3142703 /usr/lib/libnss_files-2.20.so
+vim 688 bob mem REG 8,1 461536 3150387 /usr/lib/libgmp.so.10.2.0
+vim 688 bob mem REG 8,1 9808 3142847 /usr/lib/libutil-2.20.so
+vim 688 bob mem REG 8,1 38444 3142794 /usr/lib/libcrypt-2.20.so
+vim 688 bob mem REG 8,1 17940 3145969 /usr/lib/libattr.so.1.1.0
+vim 688 bob mem REG 8,1 2669992 3172855 /usr/lib/libruby.so.2.1.0
+vim 688 bob mem REG 8,1 2059213 3162696 /usr/lib/libpython2.7.so.1.0
+vim 688 bob mem REG 8,1 2035950 3142729 /usr/lib/libc-2.20.so
+vim 688 bob mem REG 8,1 135105 3142708 /usr/lib/libpthread-2.20.so
+vim 688 bob mem REG 8,1 2026747 3147218 /usr/lib/perl5/core_perl/CORE/libperl.so
+vim 688 bob mem REG 8,1 207008 3162394 /usr/lib/liblua.so.5.2.3
+vim 688 bob mem REG 8,1 13848 3142700 /usr/lib/libdl-2.20.so
+vim 688 bob mem REG 8,1 22084 3166368 /usr/lib/libgpm.so.2.1.0
+vim 688 bob mem REG 8,1 34500 3146006 /usr/lib/libacl.so.1.1.0
+vim 688 bob mem REG 8,1 384532 3145732 /usr/lib/libncursesw.so.5.9
+vim 688 bob mem REG 8,1 308772 3142728 /usr/lib/libm-2.20.so
+vim 688 bob mem REG 8,1 159874 3142705 /usr/lib/ld-2.20.so
+vim 688 bob 0u CHR 136,1 0t0 4 /dev/pts/1
+vim 688 bob 1u CHR 136,1 0t0 4 /dev/pts/1
+vim 688 bob 2u CHR 136,1 0t0 4 /dev/pts/1
+vim 688 bob 4u REG 8,1 12288 2886318 /home/patapouf/ownCloud/Projet/Otrs/Formation GNU_Linux-debug-2022111091000031/.imap-google.crt.swp
+**
+```
+
+In the case of a network application for example ssh it is also possible to see the network connections in progress, so here is the example with a connection:
+
+```
+**
+# command on a console
+$ ssh www.bob.com -lmon_super_user
+
+# la commande lsof pour ssh
+$ lsof -n | grep ^ssh
+ssh 795 bob cwd DIR 8,1 4096 2877954 /home/xerus
+ssh 795 bob rtd DIR 8,1 4096 2 /
+ssh 795 bob txt REG 8,1 788132 3172827 /usr/bin/ssh
+ssh 795 bob mem REG 8,1 22088 3142704 /usr/lib/libnss_dns-2.20.so
+ssh 795 bob mem REG 8,1 50892 3142703 /usr/lib/libnss_files-2.20.so
+ssh 795 bob mem REG 8,1 135105 3142708 /usr/lib/libpthread-2.20.so
+ssh 795 bob mem REG 8,1 87932 3142702 /usr/lib/libresolv-2.20.so
+ssh 795 bob mem REG 8,1 13784 3171477 /usr/lib/libkeyutils.so.1.5
+ssh 795 bob mem REG 8,1 51032 3149986 /usr/lib/libkrb5support.so.0.1
+ssh 795 bob mem REG 8,1 13836 3146979 /usr/lib/libcom_err.so.2.1
+ssh 795 bob mem REG 8,1 206624 3149984 /usr/lib/libk5crypto.so.3.1
+ssh 795 bob mem REG 8,1 932000 3149954 /usr/lib/libkrb5.so.3.3
+ssh 795 bob mem REG 8,1 2035950 3142729 /usr/lib/libc-2.20.so
+ssh 795 bob mem REG 8,1 335456 3149979 /usr/lib/libgssapi_krb5.so.2.2
+ssh 795 bob mem REG 8,1 87664 3145878 /usr/lib/libz.so.1.2.8
+ssh 795 bob mem REG 8,1 415064 3174970 /usr/lib/libldns.so.1.6.17
+ssh 795 bob mem REG 8,1 13848 3142700 /usr/lib/libdl-2.20.so
+ssh 795 bob mem REG 8,1 2260460 3149394 /usr/lib/libcrypto.so.1.0.0
+ssh 795 bob mem REG 8,1 159874 3142705 /usr/lib/ld-2.20.so
+ssh 795 bob 0u CHR 136,2 0t0 5 /dev/pts/2
+ssh 795 bob 1u CHR 136,2 0t0 5 /dev/pts/2
+ssh 795 bob 2u CHR 136,2 0t0 5 /dev/pts/2
+ssh 795 bob 3u IPv4 19526 0t0 TCP 192.168.43.124:49831->198.100.146.119:ssh (ESTABLISHED)
+ssh 795 bob 4u unix 0xee699900 0t0 19168 type=STREAM
+ssh 795 bob 5u CHR 5,0 0t0 1046 /dev/tty
+**
+```
+
+We can see the TCP connection that is established between my machine and my server , we can even see the connection status with * ESTABLISHED *. As part of an analysis process to discover what a process such as discovering to which database the system establishes a connection this can be useful.
+
+Note that for web servers the connection is initialized by the client, it retrieves the information and closes the connection, the TCP / IP link is not kept during the navigation of the site.
+

@@ -1,0 +1,529 @@
+# Problem Analysis on GNU / Linux Systems
+
+## Network problem
+
+remote machine. I consider all network problems as a problem where the client indicates that he is unable to establish a connection. It can be as stupid as the service is not working or there is a problem with the routing, we will not see the analysis of switches or firwall cisco here.
+
+So take as an example the following request: the web server is down must corrected, it is urgent!
+
+Information you want to recover:
+
+  * URL used
+
+  * result on screen
+
+  * username / password if this requires authentication
+
+## Validation of the name resolution (dig)
+
+Under GNU / Linux we have the command nsloopup of available I will let you the pleasure to use it it is very similar to the Windows version. In order to offer a value added I will present dig.
+
+
+Use dig to resolve www.linuxfr.org
+
+```
+[x@aji ]$ dig www.linuxfr.org
+; <<>> DiG 9.9.2-P2 <<>> www.linuxfr.org
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 7334
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 2, ADDITIONAL: 1
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.linuxfr.org.       IN  A
+;; ANSWER SECTION:
+www.linuxfr.org.    900 IN  CNAME   prod.linuxfr.org.
+prod.linuxfr.org.   900 IN  A   88.191.250.176
+;; AUTHORITY SECTION:
+linuxfr.org.        57341   IN  NS  ns2.tuxfamily.net.
+linuxfr.org.        57341   IN  NS  ns1.tuxfamily.net.
+;; Query time: 2228 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Mon Nov 17 17:45:55 2014
+;; MSG SIZE  rcvd: 128
+``` 
+
+Several interesting information, we have the resolution, we see that www.linuxfr.org to ip 88.191.250.176, this is good, but we see especially that www.linuxfr.org is a CNAME to prod.linuxfr.org which him at the ip 88.191.250.176.
+
+
+We also see the authoritative servers for the domain's DNS: ns1, ns2.tuxfamily.net. Other interesting information we see the value 900, this value is the TTL (Time To Live) of the input, in other words, this means that this input will be kept for 900 in the cache of the DNS server and / or the client for x seconds before being called back to the DNS authority server. If I redo a query with dig
+
+ 
+```
+[x@aji ]$ dig www.linuxfr.org
+; <<>> DiG 9.9.2-P2 <<>> www.linuxfr.org
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 27519
+;; flags: qr rd ra ad; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;www.linuxfr.org.       IN  A
+;; ANSWER SECTION:
+www.linuxfr.org.    553 IN  CNAME   prod.linuxfr.org.
+prod.linuxfr.org.   553 IN  A   88.191.250.176
+```
+
+We can see the figure reduce, this is very interesting to do name resolution variation tests if you are working on Round Robin DNS.
+
+
+We can see this behavior with Facebook, during the resolution request, the ip changes every 60 seconds, my first query indicates that the CNAME of www.facebook.com is star.c10r.facebook.com whose TTL expires in 15 seconds. Subsequently the system offers another IP address, this could have been the same Facebook.
+
+
+```
+[x@aji ]$ dig www.facebook.com
+; <<>> DiG 9.9.2-P2 <<>> www.facebook.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 46858
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 2, ADDITIONAL: 3
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.facebook.com.      IN  A
+;; ANSWER SECTION:
+www.facebook.com.   3120    IN  CNAME   star.c10r.facebook.com.
+star.c10r.facebook.com. 15  IN  A   31.13.74.49
+;; AUTHORITY SECTION:
+c10r.facebook.com.  161402  IN  NS  b.ns.c10r.facebook.com.
+c10r.facebook.com.  161402  IN  NS  a.ns.c10r.facebook.com.
+;; ADDITIONAL SECTION:
+a.ns.c10r.facebook.com. 162787  IN  A   69.171.239.11
+b.ns.c10r.facebook.com. 163269  IN  A   69.171.255.11
+;; Query time: 63 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Mon Nov 17 17:55:37 2014
+;; MSG SIZE  rcvd: 152
+[x@aji ]$ dig www.facebook.com
+; <<>> DiG 9.9.2-P2 <<>> www.facebook.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 44756
+;; flags: qr rd ra ad; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;www.facebook.com.      IN  A
+;; ANSWER SECTION:
+www.facebook.com.   3107    IN  CNAME   star.c10r.facebook.com.
+star.c10r.facebook.com. 2   IN  A   31.13.74.49
+;; Query time: 18 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Mon Nov 17 17:55:49 2014
+;; MSG SIZE  rcvd: 86
+[x@aji ]$ dig www.facebook.com
+; <<>> DiG 9.9.2-P2 <<>> www.facebook.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 38449
+;; flags: qr rd ra ad; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 0
+;; QUESTION SECTION:
+;www.facebook.com.      IN  A
+;; ANSWER SECTION:
+www.facebook.com.   3106    IN  CNAME   star.c10r.facebook.com.
+star.c10r.facebook.com. 1   IN  A   31.13.74.49
+;; Query time: 41 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Mon Nov 17 17:55:51 2014
+;; MSG SIZE  rcvd: 86
+[x@aji ]$ dig www.facebook.com
+; <<>> DiG 9.9.2-P2 <<>> www.facebook.com
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 28424
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 2, ADDITIONAL: 3
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.facebook.com.      IN  A
+;; ANSWER SECTION:
+www.facebook.com.   3331    IN  CNAME   star.c10r.facebook.com.
+star.c10r.facebook.com. 60  IN  A   31.13.71.33
+;; AUTHORITY SECTION:
+c10r.facebook.com.  88216   IN  NS  a.ns.c10r.facebook.com.
+c10r.facebook.com.  88216   IN  NS  b.ns.c10r.facebook.com.
+;; ADDITIONAL SECTION:
+a.ns.c10r.facebook.com. 163582  IN  A   69.171.239.11
+b.ns.c10r.facebook.com. 165497  IN  A   69.171.255.11
+;; Query time: 96 msec
+;; SERVER: 192.168.43.1#53(192.168.43.1)
+;; WHEN: Mon Nov 17 17:55:52 2014
+;; MSG SIZE  rcvd: 152
+``` 
+
+## Query another DNS server
+
+
+It is possible that the client having the problem does not use the same DNS server as you, it is possible to query a specific server by using the @ character. Here is an example, instead of using the internal DNS server is 192.168.43.1, I will use the google DNS server. You will be able to have the same resolution as your user or server.
+
+```
+[x@aji ]$ dig www.linuxfr.org @8.8.4.4 
+; <<>> DiG 9.9.2-P2 <<>> www.linuxfr.org @8.8.4.4
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 60359
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 512
+;; QUESTION SECTION:
+;www.linuxfr.org.       IN  A
+;; ANSWER SECTION:
+www.linuxfr.org.    899 IN  CNAME   prod.linuxfr.org.
+prod.linuxfr.org.   899 IN  A   88.191.250.176
+;; Query time: 468 msec
+;; SERVER: 8.8.4.4#53(8.8.4.4)
+;; WHEN: Tue Nov 18 08:17:42 2014
+;; MSG SIZE  rcvd: 79
+```
+
+## Query MX entry and text information
+
+In the context of email problem, it is necessary to identify the email server used for the domain, to do this we can request the MX entry of the domain. Note that when sending e-mail the RFC 974 protocol uses the following sequence: 1- makes a DNS request in order to have the MX entry of the domain that identifies the e-mail server (s), it chooses the server with the lowest priority number, if it does not work it tries others. 2- If the DNS server does not have an MX entry for the domain, the email will be sent to the A record for the domain name without specifying a host name.
+
+
+Here is the result for the domain tuxfamily.net
+
+```
+$ dig mx tuxfamily.net
+; <<>> DiG 9.9.2-P2 <<>> mx tuxfamily.net
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NOERROR, id: 24238
+;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 2, ADDITIONAL: 5
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;tuxfamily.net.                 IN      MX
+;; ANSWER SECTION:
+tuxfamily.net.          86400   IN      MX      10 mx1.tuxfamily.net.
+tuxfamily.net.          86400   IN      MX      15 mx2.tuxfamily.net.
+;; AUTHORITY SECTION:
+tuxfamily.net.          34867   IN      NS      ns2.staff.tuxfamily.net.
+tuxfamily.net.          34867   IN      NS      ns1.staff.tuxfamily.net.
+```
+
+It is also possible to have the TXT input information provided by the domain.
+
+
+Today this is mainly used to inform the email servers of the limitations of who has the right to send emails via the [SPF] protocol (http://en.wikipedia.org/wiki/Sender_Policy_Framework). I will not cover here the information I will stay focused on dig, but invite you to document. It is possible to add anything to the TXT entry as we will see for the fbi.org domain
+
+```
+# Recovery of the SPF entry for google.com
+$ dig txt google.com
+;; ANSWER SECTION:
+google.com.     2266    IN  TXT "v=spf1 include:_spf.google.com ip4:216.73.93.70/31 ip4:216.73.93.72/31 ~all"
+# Retrieving TXT input for fbi.org
+$ dig txt fbi.org
+;; ANSWER SECTION:
+fbi.org.        3290    IN  TXT "bio=4d31a43fab984cd8f2e1576765a7fdaff57c9e9a"
+```
+
+Does the server service listen on the port (netstat)?
+
+
+Let's establish an SSH connection on the server that has the "problem" at least that identify as providing the service. We will validate that the service listens on the port, in the chosen example we will validate that the web service responds, but this is equivalent for all services. To see if the system listens on the port we will use the netstat command, if we run it as a root administrator we will even have the PID of the process listening on that port. Here is an example:
+
+```
+[x@aji ] $ sudo netstat -lntp
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:22              0.0.0.0:*               LISTEN      740/sshd            
+tcp6       0      0 :::22                   :::*                    LISTEN      740/sshd 
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      889/apache2
+tcp6       0      0 :::80                   :::*                    LISTEN      889/apache2
+# Visualization of UDP ports for reading
+$ sudo netstat -lnup
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+udp        0      0 0.0.0.0:68              0.0.0.0:*                           534/dhcpcd  
+```
+
+If we look at the arguments to netstat: - -l: port in (state) mode LISTEN so listening - -n: numeric display, I do not want to have name resolution but only ip (personal preference and time saving, because i do not wait for netstat to perform a reverse DNS on ip) - -t / -u: TCP or UDP, we could put t and u without problem in order to have the display of the 2 protocols - -p: poster the process (this is only available to the administrator).
+
+
+At this point we are therefore able to know if a process listens on the port and also to confirm that it is the right one. Imagine that we would have a Tomcat or Jboss process listening on port 443 whereas normally it should be apache it is normal that the result does not match expectations.
+
+
+netstat also allows us to see active connections, as part of the HTTP service this is not very convenient, because the client makes the connection, the browser retrieves the page and disconnects. There is no persistent connection.
+
+
+At this point we were able to validate that the DNS resolution is suitable either for the client or for us, we could also know if the server listens well on the presumed port in our case the web service. This implies that we know the port of the service used. At this point we could look at the logs of the application to determine the source of the problem. If we do not see anything and the client still reports the error or we can not determine the port of the service, it is still possible to capture the network traffic.
+
+
+## Capture network traffic on the server (tcpdump / wireshark)
+
+It is possible to capture the network traffic that transacts on the interface (network card), so we will be able to know if the communication arrives at the server and if the latter responds. It is also possible to read the network traffic, however It is possible to read the communication provided that the latter is not encrypted, if you have communications in SSL this is more complicated (take note that I say more complicated and not impossible ). Here is an example of communication, the client establishes a connection to the web server:
+
+```
+$ sudo tcpdump -n  host www.patapouf.com and port 80
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+12:15:54.305799 IP 172.30.39.30.34879 > 196.184.64.154.80: Flags [S], seq 4032123110, win 29200, options [mss 1460,sackOK,TS val 172171125 ecr 0,nop,wscale 7], length 0
+12:15:54.306049 IP 196.184.64.154.80 > 172.30.39.30.34879: Flags [S.], seq 664776196, ack 4032123111, win 5792, options [mss 1460,sackOK,TS val 422535168 ecr 172171125], length 0
+12:15:54.306064 IP 172.30.39.30.34879 > 196.184.64.154.80: Flags [.], ack 1, win 29200, options [nop,nop,TS val 172171125 ecr 422535168], length 0
+12:15:54.306097 IP 172.30.39.30.34879 > 196.184.64.154.80: Flags [P.], seq 1:112, ack 1, win 29200, options [nop,nop,TS val 172171125 ecr 422535168], length 111
+12:15:54.306715 IP 196.184.64.154.80 > 172.30.39.30.34879: Flags [.], ack 112, win 5792, options [nop,nop,TS val 422535169 ecr 172171125], length 0
+12:15:54.437700 IP 196.184.64.154.80 > 172.30.39.30.34879: Flags [P.], seq 1:648, ack 112, win 5792, options [nop,nop,TS val 422535201 ecr 172171125], length 647
+12:15:54.437729 IP 172.30.39.30.34879 > 196.184.64.154.80: Flags [.], ack 648, win 30409, options [nop,nop,TS val 172171158 ecr 422535201], length 0
+12:15:54.438335 IP 172.30.39.30.34879 > 196.184.64.154.80: Flags [F.], seq 112, ack 648, win 30409, options [nop,nop,TS val 172171158 ecr 422535201], length 0
+12:15:54.459720 IP 196.184.64.154.80 > 172.30.39.30.34879: Flags [F.], seq 648, ack 113, win 5792, options [nop,nop,TS val 422535207 ecr 172171158], length 0
+12:15:54.459740 IP 172.30.39.30.34879 > 196.184.64.154.80: Flags [.], ack 649, win 30409, options [nop,nop,TS val 172171163 ecr 422535207], length 0
+```
+
+This TCP / IP frame is visible in the console, this allows us quickly at a glance to see if the communication was functional however we have only the headers of communication. If we want to have all the communication, I advise you to write the result of the capture in a file. Later you will be able to interpret it with Wireshark. Let's take the same communication, but written in a file and visible with the wireshark application
+
+```
+$ sudo tcpdump -n  host www.patapouf.com and port 80 -w communication-patapouf.com.tcpdump
+tcpdump: listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+^C10 packets captured
+14 packets received by filter
+0 packets dropped by kernel
+$ wireshark communication-x3rus_com.tcpdump
+```
+
+Result: **
+
+
+As you can see, there is much more information available and especially easier to interpret, however if we simply want to confirm that the communication is done well tcpdump is more than enough.
+
+
+This method, although more complex and cumbersome in terms of the test, will above all enable us to confirm that the client communicates well on the stated port. As part of standard service such as HTTP (s) or FTP, the ports are known and are generally used because it is less complicated for the client. In the context of internal application, this may be different, we are sometimes forced to trust the client who does not have the information or incorrect information.
+
+
+## Validation of tcp / udp communication by subtracting intermediaries (client app, server app) (telnet, nc):
+
+Well we are always in an imaginary scenario the goal and provide examples of using tools. GNU / Linux systems are full of utility and software available, unfortunately we either do not know them or we do not always think to use them. In other words, the whole context setting is to provide you with an idea of ​​the possible use.
+
+
+Depending on the result of the network capture it is possible that you have not seen anything, this is boring, but there is worse, a partial result intermittently, non-regular behavior is the worst.
+
+
+Here is the current situation: We have a client application (browser, putty, internal application, ...) that transacts on the network that probably has several switches and maybe firewalls all to arrive on a server that has a multi-user application which is complex.
+
+
+We will try to reduce the complexity of the situation, if the application communicates in TCP / IP it is possible to use the telnet command to validate the communication, at least 3 handshake. If in addition the application uses a known communication protocol such as HTTP or SMTP we could go further in the test: Here are examples of use of telnet:
+
+
+HTTP communication example:
+
+```
+$ telnet google.com 80
+Trying 173.194.46.104...
+Connected to google.com.
+Escape character is '^]'.
+GET /
+HTTP/1.0 200 OK
+Date: Thu, 04 Dec 2014 17:38:30 GMT
+Expires: -1
+Cache-Control: private, max-age=0
+Content-Type: text/html; charset=ISO-8859-1
+Set-Cookie: NID=67=JmUZDQbzbfDFkCn13a0aSFbrUuAVtFVBKCXrh0L6MuD1SeXGMYMY7Ofi7h_8Yp4TdgcnLM_0F6SsuTN5FyScAHnSN8Df8uhIIrRf4QC0fVTd7wU5eAz518bYta1iaZpC; expires=Fri, 05-Jun-2015 17:38:30 GMT; path=/; domain=.; HttpOnly
+P3P: CP="This is not a P3P policy! See http://www.google.com/support/accounts/bin/answer.py?hl=en&answer=151657 for more info."
+Server: gws
+X-XSS-Protection: 1; mode=block
+X-Frame-Options: SAMEORIGIN
+Alternate-Protocol: 80:quic,p=0.02
+X-Cache: MISS from cadun-ca2-wf-610-1.magrit.int
+Via: 1.0 cadun-ca2-wf-610-1.magrit.int (http_scan_byf/3.1.12.1)
+Connection: close
+<!doctype html>
+```
+
+SMTP communication example:
+
+```
+$ telnet gmail-smtp-in.l.google.com 25
+Trying 74.125.71.26...
+Connected to gmail-smtp-in.l.google.com.
+Escape character is '^]'.
+220 mx.google.com ESMTP fk10si26230636wib.26 - gsmtp
+ehlo toto.example.com
+250-mx.google.com at your service, [198.100.146.119]
+250-SIZE 35882577
+250-8BITMIME
+250-STARTTLS
+250-ENHANCEDSTATUSCODES
+250-PIPELINING
+250-CHUNKING
+250 SMTPUTF8
+MAIL FROM: youraddressemail@example.com
+[...]
+[...]
+```
+
+Example communication timeout:
+
+```
+$ telnet www.patapouf.com 21
+Trying 196.184.64.154...
+telnet: Unable to connect to remote host: Connection timed out
+```
+
+If the 3 handshake is established, but the server application to a strange behavior rejection of the connection, no response when sending instructions or other must see the logs on the server application. If it is a service under your responsibility you probably know it or have the resources available to assist you. If it is an application outside your scope, and you want to do a passing test to confirm the communication it is possible to use nc to listen on the port. We want to reject the possibility that the problem may come from network equipment. With the previous example we have subtracted the client application from the problem, the next operation is to subtract the server application.
+
+    WARNING: this is of course not always possible, this operation will have an impact on the availability of the service, because we will have to turn off the service currently listening on the port. This is only possible if the service does not work at all or all users are impacted not just a user.
+
+
+We can use this technique also when we deploy a server with firewalls and the application deployment team is not yet on the system so there is no application yet, but we want to test the streams!
+
+
+Here is how to use nc or netcat, we will stop the service that uses port 80 or the port number. It is not possible to have 2 processes listening on the same port.
+
+
+Since I am using a port smaller than 1024 I must be root for this command.
+
+```
+$ sudo nc -l -p 80
+[sudo] password for x: 
+# command nc is in waiting mode, I have to change for another SHELL
+```
+
+If I display open ports on the machine with netstat we will see that now the port is open by the nc application.
+
+```
+$ sudo netstat -lntp
+Active Internet connections (only servers)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name    
+tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      945/nc 
+...
+...
+```
+
+I will establish a connection with telnet to see the behavior
+
+```
+# SHELL 1
+$ telnet 196.184.64.15480
+Trying 196.184.64.154...
+Connected to 196.184.64.154.
+Escape character is '^]'.
+Bonjour test avec telnet
+# result after making a carriage return (ENTER) on the SHELL 2
+$ sudo nc -l -p 80
+Hello test with telnet
+```
+
+So we see that there is communication between the server and the client, the exercise allowed us to delete 2 variables that we did not control either:
+
+  * the client application
+
+  * the server application.
+
+
+Of course at this state you could use nc to see the communication that the client performs, unfortunately as nc does not respond the client application may not behave normally, it is better to use tcpdump for this exercise.
+
+
+Here is for example the result if I use my browser to communicate with the nc listening on port 80
+
+
+```
+$ sudo nc -l -p 80 
+GET / HTTP/1.1
+Host: 127.0.0.1
+User-Agent: Mozilla/5.0 (X11; Linux i686; rv:33.0) Gecko/20100101 Firefox/33.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: en-US,en;q=0.5
+Accept-Encoding: gzip, deflate
+Connection: keep-alive
+```
+
+My browser is waiting for an answer and turns in the butter until it timeout.
+
+
+Another advantage of nc and that it can also listen on a UDP port, I do not know if you have already tried to debug a udp connection that deals with a firewall this can be boring because udp is stateless. The major impact is that the client sends packets but does not have to acknowledge the frame, so it is complicated to diagnose especially if you are not an administrator on all equipment.
+
+
+here is an example of use this is very similar
+
+```
+# SHELL 1: service start no need to be root i open a port> 1024
+$  nc -u -l -p 1234
+# SHELL 2 : 
+$ nc -u 127.0.0.1 1234 
+hello udp
+# SHELL 1: result
+$  nc -u -l -p 1234
+hello udp
+```
+
+nc therefore allows us to send communications over the network for a given port in UDP.
+
+
+I will let you explore netcat in more detail, but here is another possible use of this small tool very practical but also very dangerous!
+
+```
+# Open Shell with the user who executes the command
+# SHELL 1: Opening a shell for everyone, not even root: P
+$  nc -l -p 1337 -e "/bin/bash -i"
+# SHELL 2: Access to the shell without authentication
+$ telnet 127.0.0.1 1337
+Trying 127.0.0.1...
+Connected to 127.0.0.1.
+Escape character is '^]'.
+[x@aji GNU_Linux-debug-2022111091000031]$ ls /tmp
+ls /tmp
+qipc_sharedmemory_qtsingleapplicationbfde75a5bf91e5179df8ee7ad4556d71fef8ca2ca6aa
+qtsingleapplication-b2a3-3e8
+qtsingleapplication-b2a3-3e8-lockfile
+[x@aji GNU_Linux-debug-2022111091000031]$
+##########################
+# A web server that displays an error message, for port 80 must be root
+# while true; do nc -l -p 80 -q 1 < error.html; done ########################## # Copie de fichie entre 2 machine # SHELL 1 : serveur qui attents le fichier $ nc -lp 1337 > file.zip
+# SHELL 2: client sending the file
+$ nc -w 1 10.50.12.40 1337 < file.zip
+##########################
+# SHELL 2: client sending the # Cloned disk by the network, good ** nc ** it's not optimal but it can do it
+# SHELL 1: receiving server, be root also for write permissions on / dev / sda
+# nc -l -p 9000 | dd of=/dev/sda
+# SHELL 2; the sending machine
+# dd if=/dev/sda | nc 196.184.64.154 9000
+```
+
+## The connection timeout, validation with tcpdump (tcpdump / iptables:
+
+
+If during testing you find that the connection timeout, it is likely that a network device blocks communication, we will not cover the part of external firewall such as cisco, vyatta or other. However, we will at least be able to validate with tpcdump that the communication arrives on the machine. We have already discussed tcpdump a little higher.
+
+
+If the problem is at the level of the local application firewall on the machine you will have the following behavior:
+
+
+```
+$ sudo tcpdump -n port 8080
+tcpdump: verbose output suppressed, use -v or -vv for full protocol decode
+listening on eth0, link-type EN10MB (Ethernet), capture size 65535 bytes
+12:17:36.852218 IP 204.19.176.39.39057 > 196.184.64.154.8080: Flags [S], seq 2339648720, win 29200, options [mss 1380,sackOK,TS val 258595871 ecr 0,nop,wscale 7], length 0
+12:17:37.852357 IP 204.19.176.39.39057 > 196.184.64.154.8080: Flags [S], seq 2339648720, win 29200, options [mss 1380,sackOK,TS val 258596121 ecr 0,nop,wscale 7], length 0
+12:17:39.855745 IP 204.19.176.39.39057 > 196.184.64.154.8080: Flags [S], seq 2339648720, win 29200, options [mss 1380,sackOK,TS val 258596622 ecr 0,nop,wscale 7], length 0
+```
+
+The 3 handshake is not realized if there is a blocking at the firewall!
+With iptables we can validate if there is a firewall on the machine:
+
+3 handshake
+
+```
+$ sudo iptables -L -n
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+ACCEPT     icmp --  0.0.0.0/0            0.0.0.0/0            /* 000 accept all icmp */
+ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            /* 001 accept all to lo interface */
+ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            /* 002 accept related established rules */ state RELATED,ESTABLISHED
+ACCEPT     all  --  196.184.64.154       196.184.64.154       /* 003 accept TCP connection from myself to myself */
+ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0            multiport dports 22 /* 010 allow ssh from admins network */
+ACCEPT     tcp  --  0.0.0.0/0            0.0.0.0/0            multiport dports 443 /* 0400-_apache_website_443 */
+DROP       all  --  0.0.0.0/0            0.0.0.0/0            /* 999 drop ALL */
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination 
+ACCEPT     icmp --  0.0.0.0/0            0.0.0.0/0            /* 000 Authorize all icmp */
+ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            /* 001 Authorize all to lo interface */
+ACCEPT     all  --  0.0.0.0/0            0.0.0.0/0            /* 002 Authorized related established rules */ state RELATED,ESTABLISHED
+LOG        all  --  0.0.0.0/0            0.0.0.0/0            /* 998 log all output  */ state NEW LOG flags 0 level 4
+REJECT     all  --  0.0.0.0/0            0.0.0.0/0            /* 999 drop ALL OUTGOING */ reject-with icmp-port-unreachable
+```
+
+The customer makes you mention that it's slow!
+
+
+Here no order in particular, but rather a finding when the client makes mention that it is slow, I had the occasion to notice that often the problem is at the level of the DNS. It is therefore important to validate the configuration of the file /etc/resolv.conf ensure that the first list is valid and works well. In addition I will validate that the reverse DNS ip addresses of the particular client works well, some applications perform this validation. To do this you can use dig, I invite you to perform DNS lookups that would not be cached in order to validate the "real" resolution time, domain names vary depending on your user population.
+

@@ -93,7 +93,7 @@ Another example of soft link usage is for the definition of shared libraries, th
       lrwxrwxrwx  1 root root           20 déc  2  2011 libasprintf.so -> libasprintf.so.0.0.0
  
 # it is likely that you do not have the same file but the idea remains the same.
-If we look at the files the usual use is to tell the software to use the .so file with the version number "short" so if I take line 4, with libaften bookseller. All software that needs version 0 of the libaften library will load the file /usr/lib/libaften.so.0 which is actually the file /usr/lib/libaften.so.0.0.8. You will find that it uses the absolut nomenclature to name the file. If version 0.0.9 is available the libaften.so.0.0.9 file will be created and the symlink will be modified to point to it. The advantage is that this is totally transparent for the applications that were compiled on the system!
+If we look at the files the usual use is to tell the software to use the .so file with the version number "short" so if I take line 4, with libaften. All software that needs version 0 of the libaften library will load the file /usr/lib/libaften.so.0 which is actually the file /usr/lib/libaften.so.0.0.8. You will find that it uses the absolut nomenclature to name the file. If version 0.0.9 is available the libaften.so.0.0.9 file will be created and the symlink will be modified to point to it. The advantage is that this is totally transparent for the applications that were compiled on the system!
 
 ## Data directory to another directory
 Here are the partitions of the system:
